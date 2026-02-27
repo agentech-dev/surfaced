@@ -1,0 +1,269 @@
+"""Typed query methods for all database operations."""
+
+from __future__ import annotations
+
+from datetime import datetime
+from uuid import UUID
+
+from surfaced.db.client import DBClient
+from surfaced.models.brand import Brand
+from surfaced.models.campaign import Campaign
+from surfaced.models.prompt import Prompt
+from surfaced.models.prompt_run import PromptRun
+from surfaced.models.provider import Provider
+
+
+class QueryService:
+    """Typed query interface for all surfaced database operations."""
+
+    def __init__(self, db: DBClient | None = None):
+        self.db = db or DBClient()
+
+    # --- Brands ---
+
+    def insert_brand(self, brand: Brand) -> Brand:
+        self.db.insert_rows(
+            "brands",
+            [[
+                str(brand.id), brand.name, brand.domain, brand.description,
+                brand.aliases, brand.competitors, brand.is_active,
+                brand.created_at, brand.updated_at,
+            ]],
+            column_names=[
+                "id", "name", "domain", "description",
+                "aliases", "competitors", "is_active",
+                "created_at", "updated_at",
+            ],
+        )
+        return brand
+
+    def get_brands(self, active_only: bool = True) -> list[Brand]:
+        query = "SELECT * FROM brands FINAL"
+        if active_only:
+            query += " WHERE is_active = 1"
+        query += " ORDER BY name"
+        rows = self.db.execute(query)
+        return [Brand.from_dict(r) for r in rows]
+
+    def get_brand(self, brand_id: UUID) -> Brand | None:
+        rows = self.db.execute(
+            "SELECT * FROM brands FINAL WHERE id = {id:UUID}",
+            parameters={"id": str(brand_id)},
+        )
+        return Brand.from_dict(rows[0]) if rows else None
+
+    def get_brand_by_name(self, name: str) -> Brand | None:
+        rows = self.db.execute(
+            "SELECT * FROM brands FINAL WHERE name = {name:String} AND is_active = 1",
+            parameters={"name": name},
+        )
+        return Brand.from_dict(rows[0]) if rows else None
+
+    def update_brand(self, brand: Brand) -> Brand:
+        brand.updated_at = datetime.now()
+        return self.insert_brand(brand)
+
+    def delete_brand(self, brand_id: UUID) -> None:
+        brand = self.get_brand(brand_id)
+        if brand:
+            brand.is_active = 0
+            self.update_brand(brand)
+
+    # --- Providers ---
+
+    def insert_provider(self, provider: Provider) -> Provider:
+        self.db.insert_rows(
+            "providers",
+            [[
+                str(provider.id), provider.name, provider.provider_type,
+                provider.execution_mode, provider.model, provider.config,
+                provider.rate_limit_rpm, provider.is_active,
+                provider.created_at, provider.updated_at,
+            ]],
+            column_names=[
+                "id", "name", "provider_type", "execution_mode",
+                "model", "config", "rate_limit_rpm", "is_active",
+                "created_at", "updated_at",
+            ],
+        )
+        return provider
+
+    def get_providers(self, active_only: bool = True) -> list[Provider]:
+        query = "SELECT * FROM providers FINAL"
+        if active_only:
+            query += " WHERE is_active = 1"
+        query += " ORDER BY name"
+        rows = self.db.execute(query)
+        return [Provider.from_dict(r) for r in rows]
+
+    def get_provider(self, provider_id: UUID) -> Provider | None:
+        rows = self.db.execute(
+            "SELECT * FROM providers FINAL WHERE id = {id:UUID}",
+            parameters={"id": str(provider_id)},
+        )
+        return Provider.from_dict(rows[0]) if rows else None
+
+    def get_provider_by_name(self, name: str) -> Provider | None:
+        rows = self.db.execute(
+            "SELECT * FROM providers FINAL WHERE name = {name:String} AND is_active = 1",
+            parameters={"name": name},
+        )
+        return Provider.from_dict(rows[0]) if rows else None
+
+    def delete_provider(self, provider_id: UUID) -> None:
+        provider = self.get_provider(provider_id)
+        if provider:
+            provider.is_active = 0
+            provider.updated_at = datetime.now()
+            self.insert_provider(provider)
+
+    # --- Prompts ---
+
+    def insert_prompt(self, prompt: Prompt) -> Prompt:
+        self.db.insert_rows(
+            "prompts",
+            [[
+                str(prompt.id), prompt.text, prompt.category,
+                prompt.tags, str(prompt.brand_id), prompt.is_template,
+                prompt.variables, prompt.is_active,
+                prompt.created_at, prompt.updated_at,
+            ]],
+            column_names=[
+                "id", "text", "category", "tags", "brand_id",
+                "is_template", "variables", "is_active",
+                "created_at", "updated_at",
+            ],
+        )
+        return prompt
+
+    def get_prompts(
+        self,
+        active_only: bool = True,
+        category: str | None = None,
+        tag: str | None = None,
+        brand_id: UUID | None = None,
+    ) -> list[Prompt]:
+        conditions = []
+        params = {}
+        if active_only:
+            conditions.append("is_active = 1")
+        if category:
+            conditions.append("category = {category:String}")
+            params["category"] = category
+        if tag:
+            conditions.append("has(tags, {tag:String})")
+            params["tag"] = tag
+        if brand_id:
+            conditions.append("brand_id = {brand_id:UUID}")
+            params["brand_id"] = str(brand_id)
+
+        query = "SELECT * FROM prompts FINAL"
+        if conditions:
+            query += " WHERE " + " AND ".join(conditions)
+        query += " ORDER BY created_at DESC"
+        rows = self.db.execute(query, parameters=params if params else None)
+        return [Prompt.from_dict(r) for r in rows]
+
+    def get_prompt(self, prompt_id: UUID) -> Prompt | None:
+        rows = self.db.execute(
+            "SELECT * FROM prompts FINAL WHERE id = {id:UUID}",
+            parameters={"id": str(prompt_id)},
+        )
+        return Prompt.from_dict(rows[0]) if rows else None
+
+    def update_prompt(self, prompt: Prompt) -> Prompt:
+        prompt.updated_at = datetime.now()
+        return self.insert_prompt(prompt)
+
+    def delete_prompt(self, prompt_id: UUID) -> None:
+        prompt = self.get_prompt(prompt_id)
+        if prompt:
+            prompt.is_active = 0
+            self.update_prompt(prompt)
+
+    # --- Campaigns ---
+
+    def insert_campaign(self, campaign: Campaign) -> Campaign:
+        self.db.insert_rows(
+            "campaigns",
+            [[
+                str(campaign.id), campaign.name, campaign.status,
+                campaign.filters, campaign.total_prompts,
+                campaign.completed_prompts, campaign.started_at,
+                campaign.finished_at or datetime(1970, 1, 1),
+                campaign.created_at, campaign.updated_at,
+            ]],
+            column_names=[
+                "id", "name", "status", "filters",
+                "total_prompts", "completed_prompts",
+                "started_at", "finished_at",
+                "created_at", "updated_at",
+            ],
+        )
+        return campaign
+
+    def get_campaigns(self, limit: int = 20) -> list[Campaign]:
+        rows = self.db.execute(
+            f"SELECT * FROM campaigns FINAL ORDER BY created_at DESC LIMIT {limit}"
+        )
+        return [Campaign.from_dict(r) for r in rows]
+
+    def get_campaign(self, campaign_id: UUID) -> Campaign | None:
+        rows = self.db.execute(
+            "SELECT * FROM campaigns FINAL WHERE id = {id:UUID}",
+            parameters={"id": str(campaign_id)},
+        )
+        return Campaign.from_dict(rows[0]) if rows else None
+
+    def update_campaign(self, campaign: Campaign) -> Campaign:
+        campaign.updated_at = datetime.now()
+        return self.insert_campaign(campaign)
+
+    # --- Prompt Runs ---
+
+    def insert_prompt_run(self, run: PromptRun) -> PromptRun:
+        self.db.insert_rows(
+            "prompt_runs",
+            [[
+                str(run.id), str(run.campaign_id), str(run.prompt_id),
+                str(run.provider_id), str(run.brand_id),
+                run.prompt_text, run.prompt_category, run.response_text,
+                run.model, run.provider_name, run.latency_ms,
+                run.input_tokens, run.output_tokens,
+                run.status, run.error_message,
+                run.brand_mentioned, run.competitors_mentioned,
+                run.created_at,
+            ]],
+            column_names=[
+                "id", "campaign_id", "prompt_id", "provider_id", "brand_id",
+                "prompt_text", "prompt_category", "response_text",
+                "model", "provider_name", "latency_ms",
+                "input_tokens", "output_tokens",
+                "status", "error_message",
+                "brand_mentioned", "competitors_mentioned",
+                "created_at",
+            ],
+        )
+        return run
+
+    def get_prompt_runs(
+        self,
+        campaign_id: UUID | None = None,
+        brand_id: UUID | None = None,
+        limit: int = 100,
+    ) -> list[PromptRun]:
+        conditions = []
+        params = {}
+        if campaign_id:
+            conditions.append("campaign_id = {campaign_id:UUID}")
+            params["campaign_id"] = str(campaign_id)
+        if brand_id:
+            conditions.append("brand_id = {brand_id:UUID}")
+            params["brand_id"] = str(brand_id)
+
+        query = "SELECT * FROM prompt_runs"
+        if conditions:
+            query += " WHERE " + " AND ".join(conditions)
+        query += f" ORDER BY created_at DESC LIMIT {limit}"
+        rows = self.db.execute(query, parameters=params if params else None)
+        return [PromptRun.from_dict(r) for r in rows]

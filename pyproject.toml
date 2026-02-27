@@ -1,0 +1,26 @@
+[project]
+name = "surfaced"
+version = "0.1.0"
+description = "Open-source AI visibility tracking - monitor how brands appear in AI-generated responses"
+readme = "README.md"
+authors = [
+    { name = "sdairs", email = "sdairs@users.noreply.github.com" }
+]
+requires-python = ">=3.12"
+dependencies = [
+    "anthropic>=0.84.0",
+    "click>=8.3.1",
+    "clickhouse-connect>=0.13.0",
+]
+
+[project.scripts]
+surfaced = "surfaced.cli.main:cli"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0.2",
+]
