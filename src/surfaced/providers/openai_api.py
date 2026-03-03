@@ -11,7 +11,7 @@ from surfaced.providers.base import AIProvider, ProviderResponse
 
 
 class OpenAIAPIProvider(AIProvider):
-    def __init__(self, model: str = "gpt-4o", max_tokens: int = 4096):
+    def __init__(self, model: str = "gpt-5.2", max_tokens: int = 4096):
         self.model = model
         self.max_tokens = max_tokens
         api_key = os.environ.get("OPENAI_API_KEY")

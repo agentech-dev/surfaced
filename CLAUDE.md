@@ -18,7 +18,7 @@ surfaced brands add --name "YourBrand" --domain yourbrand.com \
 
 # 5. Add a provider
 surfaced providers add --name "Claude Sonnet" --type anthropic_api --mode api \
-  --model claude-sonnet-4-20250514
+  --model claude-sonnet-4-6
 
 # 6. Add prompts
 surfaced prompts add --text "What are the best tools for X?" \

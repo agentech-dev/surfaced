@@ -1,5 +1,7 @@
 """Main CLI entry point for surfaced."""
 
+import os
+
 import click
 
 from surfaced.cli.init import init
@@ -14,11 +16,38 @@ from surfaced.cli.analytics import analytics
 from surfaced.cli.purge import purge
 
 
+def _load_env():
+    """Load .env file without overwriting already-exported variables.
+
+    Checks ~/.surfaced/.env and ./.env in that order.
+    Only sets a variable if it is not already present in the environment.
+    """
+    candidates = [
+        os.path.join(os.path.expanduser("~"), ".surfaced", ".env"),
+        os.path.join(os.getcwd(), ".env"),
+    ]
+    for path in candidates:
+        if not os.path.isfile(path):
+            continue
+        with open(path) as f:
+            for line in f:
+                line = line.strip()
+                if not line or line.startswith("#"):
+                    continue
+                if "=" not in line:
+                    continue
+                key, _, value = line.partition("=")
+                key = key.strip()
+                value = value.strip()
+                if key and value and key not in os.environ:
+                    os.environ[key] = value
+
+
 @click.group()
 @click.version_option(version="0.1.0")
 def cli():
     """Surfaced - Open-source AI visibility tracking."""
-    pass
+    _load_env()
 
 
 cli.add_command(init)

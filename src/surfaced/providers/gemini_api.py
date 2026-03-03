@@ -11,7 +11,7 @@ from surfaced.providers.base import AIProvider, ProviderResponse
 
 
 class GeminiAPIProvider(AIProvider):
-    def __init__(self, model: str = "gemini-2.5-flash", max_tokens: int = 4096):
+    def __init__(self, model: str = "gemini-3.1-pro-preview", max_tokens: int = 4096):
         self.model = model
         self.max_tokens = max_tokens
         api_key = os.environ.get("GEMINI_API_KEY")

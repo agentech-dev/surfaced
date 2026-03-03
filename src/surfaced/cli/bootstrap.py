@@ -149,12 +149,22 @@ def bootstrap(skip_cron, skip_cli_tools, host, port):
         # ---------- 7. Install CLI tools ----------
         if js_runtime:
             npm_cmd = "bun" if js_runtime == "bun" else js_runtime
+
+            # Configure npm to install globals to ~/.local without sudo
+            if npm_cmd == "npm":
+                npm_prefix = os.path.join(os.path.expanduser("~"), ".local")
+                _run(f"npm config set prefix {npm_prefix}", check=False, capture=True)
+                # Ensure the npm global bin is on PATH for this process
+                npm_bin = os.path.join(npm_prefix, "bin")
+                if npm_bin not in os.environ.get("PATH", ""):
+                    os.environ["PATH"] = npm_bin + ":" + os.environ.get("PATH", "")
+
             install_flag = "add --global" if js_runtime == "bun" else "install -g"
 
             cli_tools = [
                 ("claude", "@anthropic-ai/claude-code"),
                 ("codex", "@openai/codex"),
-                ("gemini", "@anthropic-ai/gemini-cli"),
+                ("gemini", "@google/gemini-cli"),
             ]
 
             click.echo("==> Installing CLI tools...")

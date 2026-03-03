@@ -11,7 +11,7 @@ from surfaced.providers.base import AIProvider, ProviderResponse
 
 
 class AnthropicAPIProvider(AIProvider):
-    def __init__(self, model: str = "claude-sonnet-4-20250514", max_tokens: int = 4096):
+    def __init__(self, model: str = "claude-sonnet-4-6", max_tokens: int = 4096):
         self.model = model
         self.max_tokens = max_tokens
         api_key = os.environ.get("ANTHROPIC_API_KEY")

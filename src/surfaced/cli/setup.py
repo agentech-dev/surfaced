@@ -172,9 +172,9 @@ def _step_providers():
 
     # API providers based on configured keys
     api_providers = [
-        ("ANTHROPIC_API_KEY", "Claude Sonnet", "anthropic_api", "api", "claude-sonnet-4-20250514"),
-        ("OPENAI_API_KEY", "GPT-4o", "openai_api", "api", "gpt-4o"),
-        ("GEMINI_API_KEY", "Gemini Flash", "gemini_api", "api", "gemini-2.5-flash"),
+        ("ANTHROPIC_API_KEY", "Claude Sonnet 4.6", "anthropic_api", "api", "claude-sonnet-4-6"),
+        ("OPENAI_API_KEY", "GPT-5.2", "openai_api", "api", "gpt-5.2"),
+        ("GEMINI_API_KEY", "Gemini 3.1 Pro", "gemini_api", "api", "gemini-3.1-pro-preview"),
     ]
 
     for env_key, name, ptype, mode, model in api_providers:
@@ -195,9 +195,9 @@ def _step_providers():
 
     # CLI providers based on installed tools
     cli_providers = [
-        ("claude", "Claude CLI", "claude_cli", "cli", "claude-sonnet-4-20250514"),
+        ("claude", "Claude CLI", "claude_cli", "cli", "claude-sonnet-4-6"),
         ("codex", "Codex CLI", "openai_cli", "cli", "codex"),
-        ("gemini", "Gemini CLI", "gemini_cli", "cli", "gemini-2.5-flash"),
+        ("gemini", "Gemini CLI", "gemini_cli", "cli", "gemini-3.1-pro-preview"),
     ]
 
     cli_found = [(binary, name, ptype, mode, model) for binary, name, ptype, mode, model in cli_providers if shutil.which(binary)]
