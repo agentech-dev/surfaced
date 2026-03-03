@@ -10,11 +10,20 @@ import click
 
 from surfaced.db.queries import QueryService
 
-QUERIES_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "..", "clickhouse", "queries")
-
-
 def _find_queries_dir():
-    """Walk up from CWD to find clickhouse/queries/."""
+    """Find the clickhouse/queries/ directory."""
+    # Check relative to the package installation
+    pkg_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+    candidate = os.path.join(pkg_dir, "clickhouse", "queries")
+    if os.path.isdir(candidate):
+        return candidate
+
+    # Check ~/.surfaced/ (where install.sh clones the repo)
+    home_candidate = os.path.join(os.path.expanduser("~"), ".surfaced", "clickhouse", "queries")
+    if os.path.isdir(home_candidate):
+        return home_candidate
+
+    # Fall back to walking up from CWD
     current = os.getcwd()
     for _ in range(10):
         candidate = os.path.join(current, "clickhouse", "queries")
