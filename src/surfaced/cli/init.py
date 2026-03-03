@@ -6,14 +6,10 @@ import os
 import click
 
 
-@click.command()
-@click.option("--host", default="localhost", help="ClickHouse host")
-@click.option("--port", default=8123, type=int, help="ClickHouse HTTP port")
-def init(host, port):
-    """Initialize the ClickHouse database schema.
+def run_schema_init(host: str = "localhost", port: int = 8123) -> int:
+    """Initialize the ClickHouse schema. Returns count of applied files.
 
-    Runs all table and materialized view SQL files in order.
-    Requires a running ClickHouse server (chv run server).
+    Callable from both the `init` CLI command and `bootstrap`.
     """
     import clickhouse_connect
 
@@ -46,10 +42,35 @@ def init(host, port):
             total += 1
 
     click.echo(f"\nInitialized {total} schema files successfully.")
+    return total
+
+
+@click.command()
+@click.option("--host", default="localhost", help="ClickHouse host")
+@click.option("--port", default=8123, type=int, help="ClickHouse HTTP port")
+def init(host, port):
+    """Initialize the ClickHouse database schema.
+
+    Runs all table and materialized view SQL files in order.
+    Requires a running ClickHouse server (chv run server).
+    """
+    run_schema_init(host, port)
 
 
 def _find_clickhouse_dir():
     """Walk up from CWD to find the clickhouse/ directory."""
+    # First check relative to the package installation (works after uv tool install)
+    package_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+    candidate = os.path.join(package_dir, "clickhouse")
+    if os.path.isdir(candidate):
+        return candidate
+
+    # Also check ~/.surfaced/ (where install.sh clones the repo)
+    home_candidate = os.path.join(os.path.expanduser("~"), ".surfaced", "clickhouse")
+    if os.path.isdir(home_candidate):
+        return home_candidate
+
+    # Fall back to walking up from CWD
     current = os.getcwd()
     for _ in range(10):
         candidate = os.path.join(current, "clickhouse")

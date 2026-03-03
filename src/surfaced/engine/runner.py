@@ -31,6 +31,7 @@ def run_campaign(
     brand_id: UUID | None = None,
     prompt_id: UUID | None = None,
     dry_run: bool = False,
+    no_history: bool = False,
 ) -> Campaign | None:
     """Execute prompts against providers and store results."""
     # Gather prompts
@@ -69,6 +70,15 @@ def run_campaign(
                 click.echo(f"  [{prov.name}] {prompt.text[:80]}...")
         return None
 
+    # Validate all providers before starting (fail fast on missing keys, etc.)
+    ai_providers = {}
+    for prov_record in providers:
+        try:
+            ai_providers[prov_record.id] = get_provider(prov_record)
+        except Exception as e:
+            click.echo(f"Error: Provider '{prov_record.name}' failed to initialize: {e}", err=True)
+            raise SystemExit(1)
+
     # Create campaign
     campaign = Campaign(
         name=f"Campaign {datetime.now().strftime('%Y-%m-%d %H:%M')}",
@@ -83,57 +93,29 @@ def run_campaign(
     errors = 0
     rate_limiters: dict[UUID, RateLimiter] = {}
 
-    for prov_record in providers:
-        ai_provider = get_provider(prov_record)
-        if prov_record.id not in rate_limiters:
-            rate_limiters[prov_record.id] = RateLimiter(rpm=prov_record.rate_limit_rpm)
-        limiter = rate_limiters[prov_record.id]
+    try:
+        for prov_record in providers:
+            ai_provider = ai_providers[prov_record.id]
+            if prov_record.id not in rate_limiters:
+                rate_limiters[prov_record.id] = RateLimiter(rpm=prov_record.rate_limit_rpm)
+            limiter = rate_limiters[prov_record.id]
 
-        for prompt in prompts:
-            rendered_text = render_prompt(prompt)
-            brand = qs.get_brand(prompt.brand_id)
+            for prompt in prompts:
+                rendered_text = render_prompt(prompt)
+                brand = qs.get_brand(prompt.brand_id)
 
-            # Retry loop
-            for attempt in range(MAX_RETRIES):
-                try:
-                    limiter.wait()
-                    response = ai_provider.execute(rendered_text)
+                # Retry loop
+                for attempt in range(MAX_RETRIES):
+                    try:
+                        limiter.wait()
+                        response = ai_provider.execute(rendered_text, no_history=no_history)
 
-                    brand_mentioned = 0
-                    competitors_mentioned = []
-                    if brand:
-                        brand_mentioned = 1 if check_brand_mentioned(response.text, brand) else 0
-                        competitors_mentioned = find_competitors_mentioned(response.text, brand)
+                        brand_mentioned = 0
+                        competitors_mentioned = []
+                        if brand:
+                            brand_mentioned = 1 if check_brand_mentioned(response.text, brand) else 0
+                            competitors_mentioned = find_competitors_mentioned(response.text, brand)
 
-                    run = PromptRun(
-                        campaign_id=campaign.id,
-                        prompt_id=prompt.id,
-                        provider_id=prov_record.id,
-                        brand_id=prompt.brand_id,
-                        prompt_text=rendered_text,
-                        prompt_category=prompt.category,
-                        response_text=response.text,
-                        model=response.model,
-                        provider_name=prov_record.name,
-                        latency_ms=response.latency_ms,
-                        input_tokens=response.input_tokens,
-                        output_tokens=response.output_tokens,
-                        status="success",
-                        brand_mentioned=brand_mentioned,
-                        competitors_mentioned=competitors_mentioned,
-                    )
-                    qs.insert_prompt_run(run)
-                    completed += 1
-                    click.echo(f"  [{completed}/{total}] {prov_record.name}: {prompt.text[:50]}... ({'mentioned' if brand_mentioned else 'not mentioned'})")
-                    break
-
-                except Exception as e:
-                    if attempt < MAX_RETRIES - 1:
-                        wait = BACKOFF_BASE ** attempt
-                        click.echo(f"  Retry {attempt + 1}/{MAX_RETRIES} after {wait}s: {e}")
-                        time.sleep(wait)
-                    else:
-                        errors += 1
                         run = PromptRun(
                             campaign_id=campaign.id,
                             prompt_id=prompt.id,
@@ -141,15 +123,54 @@ def run_campaign(
                             brand_id=prompt.brand_id,
                             prompt_text=rendered_text,
                             prompt_category=prompt.category,
-                            response_text="",
-                            model=prov_record.model,
+                            response_text=response.text,
+                            model=response.model,
                             provider_name=prov_record.name,
-                            latency_ms=0,
-                            status="error",
-                            error_message=traceback.format_exc(),
+                            latency_ms=response.latency_ms,
+                            input_tokens=response.input_tokens,
+                            output_tokens=response.output_tokens,
+                            status="success",
+                            brand_mentioned=brand_mentioned,
+                            competitors_mentioned=competitors_mentioned,
                         )
                         qs.insert_prompt_run(run)
-                        click.echo(f"  [{completed + errors}/{total}] FAILED: {e}")
+                        completed += 1
+                        click.echo(f"  [{completed}/{total}] {prov_record.name}: {prompt.text[:50]}... ({'mentioned' if brand_mentioned else 'not mentioned'})")
+                        break
+
+                    except KeyboardInterrupt:
+                        raise
+                    except Exception as e:
+                        if attempt < MAX_RETRIES - 1:
+                            wait = BACKOFF_BASE ** attempt
+                            click.echo(f"  Retry {attempt + 1}/{MAX_RETRIES} after {wait}s: {e}")
+                            time.sleep(wait)
+                        else:
+                            errors += 1
+                            run = PromptRun(
+                                campaign_id=campaign.id,
+                                prompt_id=prompt.id,
+                                provider_id=prov_record.id,
+                                brand_id=prompt.brand_id,
+                                prompt_text=rendered_text,
+                                prompt_category=prompt.category,
+                                response_text="",
+                                model=prov_record.model,
+                                provider_name=prov_record.name,
+                                latency_ms=0,
+                                status="error",
+                                error_message=traceback.format_exc(),
+                            )
+                            qs.insert_prompt_run(run)
+                            click.echo(f"  [{completed + errors}/{total}] FAILED: {e}")
+
+    except KeyboardInterrupt:
+        click.echo(f"\n\nCampaign interrupted. {completed} completed, {errors} failed before cancellation.")
+        campaign.completed_prompts = completed
+        campaign.status = "cancelled"
+        campaign.finished_at = datetime.now()
+        qs.update_campaign(campaign)
+        return campaign
 
     # Update campaign
     campaign.completed_prompts = completed

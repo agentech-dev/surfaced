@@ -3,12 +3,15 @@
 import click
 
 from surfaced.cli.init import init
+from surfaced.cli.bootstrap import bootstrap
+from surfaced.cli.setup import setup
 from surfaced.cli.brands import brands
 from surfaced.cli.prompts import prompts
 from surfaced.cli.providers import providers
 from surfaced.cli.run import run
 from surfaced.cli.campaigns import campaigns
 from surfaced.cli.analytics import analytics
+from surfaced.cli.purge import purge
 
 
 @click.group()
@@ -19,9 +22,12 @@ def cli():
 
 
 cli.add_command(init)
+cli.add_command(bootstrap)
+cli.add_command(setup)
 cli.add_command(brands)
 cli.add_command(prompts)
 cli.add_command(providers)
 cli.add_command(run)
 cli.add_command(campaigns)
 cli.add_command(analytics)
+cli.add_command(purge)

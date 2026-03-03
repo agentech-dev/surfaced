@@ -17,8 +17,14 @@ class ProviderResponse:
 
 class AIProvider(ABC):
     @abstractmethod
-    def execute(self, prompt: str) -> ProviderResponse:
-        """Execute a prompt and return the response."""
+    def execute(self, prompt: str, no_history: bool = False) -> ProviderResponse:
+        """Execute a prompt and return the response.
+
+        Args:
+            prompt: The prompt text to send.
+            no_history: If True, best-effort attempt to not load any local
+                history or memory. Does not delete anything.
+        """
         ...
 
     @abstractmethod

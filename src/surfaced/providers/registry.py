@@ -6,10 +6,18 @@ from surfaced.models.provider import Provider
 from surfaced.providers.anthropic_api import AnthropicAPIProvider
 from surfaced.providers.base import AIProvider
 from surfaced.providers.claude_cli import ClaudeCLIProvider
+from surfaced.providers.codex_cli import CodexCLIProvider
+from surfaced.providers.gemini_api import GeminiAPIProvider
+from surfaced.providers.gemini_cli import GeminiCLIProvider
+from surfaced.providers.openai_api import OpenAIAPIProvider
 
 PROVIDER_MAP: dict[str, type[AIProvider]] = {
     "anthropic_api": AnthropicAPIProvider,
+    "openai_api": OpenAIAPIProvider,
+    "gemini_api": GeminiAPIProvider,
     "claude_cli": ClaudeCLIProvider,
+    "codex_cli": CodexCLIProvider,
+    "gemini_cli": GeminiCLIProvider,
 }
 
 

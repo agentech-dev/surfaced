@@ -13,10 +13,13 @@ class ClaudeCLIProvider(AIProvider):
     def __init__(self, model: str | None = None):
         self.model = model
 
-    def execute(self, prompt: str) -> ProviderResponse:
+    def execute(self, prompt: str, no_history: bool = False) -> ProviderResponse:
         cmd = ["claude", "-p", prompt, "--output-format", "json"]
         if self.model:
             cmd.extend(["--model", self.model])
+        if no_history:
+            # Best-effort: don't persist sessions, don't load project/user settings
+            cmd.extend(["--no-session-persistence"])
 
         start = time.time()
         result = subprocess.run(cmd, capture_output=True, text=True, timeout=120)

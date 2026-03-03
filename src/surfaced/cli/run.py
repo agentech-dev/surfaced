@@ -15,7 +15,8 @@ from surfaced.engine.runner import run_campaign
 @click.option("--brand", default=None, help="Filter by brand ID or name")
 @click.option("--prompt", "prompt_id", default=None, help="Run a specific prompt ID")
 @click.option("--dry-run", is_flag=True, help="Show what would execute without running")
-def run(category, provider, tag, brand, prompt_id, dry_run):
+@click.option("--no-history", is_flag=True, help="Best-effort: tell CLI providers not to load local history/memory")
+def run(category, provider, tag, brand, prompt_id, dry_run, no_history):
     """Run prompts against AI providers and store results."""
     qs = QueryService()
 
@@ -41,4 +42,5 @@ def run(category, provider, tag, brand, prompt_id, dry_run):
         brand_id=brand_uuid,
         prompt_id=prompt_uuid,
         dry_run=dry_run,
+        no_history=no_history,
     )

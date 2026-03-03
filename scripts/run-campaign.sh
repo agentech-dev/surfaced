@@ -8,6 +8,17 @@
 
 set -euo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
+cd "$PROJECT_DIR"
+
+# Load API keys
+if [ -f .env ]; then
+    set -a
+    source .env
+    set +a
+fi
+
 TAG="${1:?Usage: run-campaign.sh <tag>}"
 LOGDIR="$(dirname "$0")/../logs"
 mkdir -p "$LOGDIR"
