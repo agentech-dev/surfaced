@@ -66,7 +66,7 @@ def bootstrap(skip_cron, skip_cli_tools, host, port):
         click.echo("  - chv already installed")
     else:
         click.echo("  Installing chv...")
-        _run("curl -sSL https://raw.githubusercontent.com/duyet/clickhouse-versionmanager/main/install.sh | bash")
+        _run("curl -sSL https://raw.githubusercontent.com/sdairs/chv/main/install.sh | bash")
         # Ensure PATH includes chv
         os.environ["PATH"] = os.path.join(os.path.expanduser("~"), ".local", "bin") + ":" + os.environ.get("PATH", "")
         click.echo("  ✓ chv installed")
