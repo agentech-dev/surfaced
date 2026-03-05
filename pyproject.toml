@@ -13,6 +13,7 @@ dependencies = [
     "clickhouse-connect>=0.13.0",
     "google-genai>=1.65.0",
     "openai>=2.24.0",
+    "questionary>=2.1.0",
 ]
 
 [project.scripts]

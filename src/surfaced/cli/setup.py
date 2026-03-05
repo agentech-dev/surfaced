@@ -5,6 +5,7 @@ import os
 import shutil
 
 import click
+import questionary
 
 from surfaced.db.queries import QueryService
 from surfaced.models.brand import Brand
@@ -27,24 +28,6 @@ def _find_project_dir() -> str:
 
 def _env_path() -> str:
     return os.path.join(_find_project_dir(), ".env")
-
-
-def _numbered_select(label: str, options: list[str], allow_multiple: bool = False) -> list[int]:
-    """Display a numbered menu and return selected indices (0-based)."""
-    click.echo(f"\n{label}")
-    for i, opt in enumerate(options, 1):
-        click.echo(f"  [{i}] {opt}")
-
-    if allow_multiple:
-        raw = click.prompt("Enter numbers separated by commas (e.g. 1,2)", type=str)
-        try:
-            return [int(x.strip()) - 1 for x in raw.split(",") if x.strip()]
-        except ValueError:
-            click.echo("Invalid input, skipping.")
-            return []
-    else:
-        raw = click.prompt("Enter number", type=int)
-        return [raw - 1]
 
 
 def _parse_env(path: str) -> dict[str, str]:
@@ -82,7 +65,6 @@ def _write_env_key(path: str, key: str, value: str) -> None:
             new_lines.append(f"{key}={value}\n")
             found = True
         elif stripped == key or stripped == f"# {key}=":
-            # Replace commented-out or bare key
             new_lines.append(f"{key}={value}\n")
             found = True
         else:
@@ -114,18 +96,29 @@ def _step_keys():
         status = "set" if env_key in env else "not set"
         click.echo(f"  {label}: {status}")
 
-    options = [label for _, label in key_defs]
-    selected = _numbered_select("Which API keys do you want to configure?", options, allow_multiple=True)
+    choices = [
+        questionary.Choice(title=label, value=i)
+        for i, (_, label) in enumerate(key_defs)
+    ]
+    selected = questionary.checkbox(
+        "Which API keys do you want to configure?",
+        choices=choices,
+    ).ask()
+
+    if selected is None:  # user cancelled
+        return
 
     for idx in selected:
-        if 0 <= idx < len(key_defs):
-            env_key, label = key_defs[idx]
-            current = env.get(env_key, "")
-            hint = f" (current: {current[:8]}...)" if current else ""
-            value = click.prompt(f"  Enter {label} API key{hint}", default=current, show_default=False)
-            if value:
-                _write_env_key(env_path, env_key, value)
-                click.echo(f"  ✓ {label} key saved")
+        env_key, label = key_defs[idx]
+        current = env.get(env_key, "")
+        hint = f" (current: {current[:8]}...)" if current else ""
+        value = questionary.text(
+            f"Enter {label} API key{hint}:",
+            default=current,
+        ).ask()
+        if value:
+            _write_env_key(env_path, env_key, value)
+            click.echo(f"  ✓ {label} key saved")
 
     click.echo("  Done with API keys.")
 
@@ -142,23 +135,42 @@ def _step_brand() -> Brand | None:
         click.echo(f"  Found {len(brands)} existing brand(s):")
         for b in brands:
             click.echo(f"    - {b.name} ({b.id})")
-        if not click.confirm("  Add another brand?", default=False):
+        add_another = questionary.confirm("Add another brand?", default=False).ask()
+        if not add_another:
             return brands[0]
 
-    name = click.prompt("  Brand name")
-    domain = click.prompt("  Domain (e.g. example.com)", default="")
-    aliases_raw = click.prompt("  Aliases (comma-separated)", default="")
-    competitors_raw = click.prompt("  Competitors (comma-separated)", default="")
+    name = questionary.text("Brand name:").ask()
+    if not name:
+        return brands[0] if brands else None
+
+    domain = questionary.text("Domain (e.g. example.com):", default="").ask() or ""
+
+    aliases = _prompt_list("Add brand aliases (enter each one, empty to finish):")
+    competitors = _prompt_list("Add competitors (enter each one, empty to finish):")
 
     brand = Brand(
         name=name,
         domain=domain,
-        aliases=[a.strip() for a in aliases_raw.split(",") if a.strip()] if aliases_raw else [],
-        competitors=[c.strip() for c in competitors_raw.split(",") if c.strip()] if competitors_raw else [],
+        aliases=aliases,
+        competitors=competitors,
     )
     qs.insert_brand(brand)
     click.echo(f"  ✓ Brand '{name}' created ({brand.id})")
     return brand
+
+
+def _prompt_list(label: str) -> list[str]:
+    """Prompt for items one at a time until the user enters an empty value."""
+    click.echo(f"  {label}")
+    items = []
+    while True:
+        value = questionary.text(f"  [{len(items) + 1}]:", default="").ask()
+        if not value:
+            break
+        items.append(value.strip())
+    if items:
+        click.echo(f"    Added: {', '.join(items)}")
+    return items
 
 
 # ── Step 3: Providers ─────────────────────────────────────────────────
@@ -196,16 +208,27 @@ def _step_providers():
     # CLI providers based on installed tools
     cli_providers = [
         ("claude", "Claude CLI", "claude_cli", "cli", "claude-sonnet-4-6"),
-        ("codex", "Codex CLI", "openai_cli", "cli", "codex"),
+        ("codex", "Codex CLI", "codex_cli", "cli", "codex"),
         ("gemini", "Gemini CLI", "gemini_cli", "cli", "gemini-3.1-pro-preview"),
     ]
 
     cli_found = [(binary, name, ptype, mode, model) for binary, name, ptype, mode, model in cli_providers if shutil.which(binary)]
     if cli_found:
-        options = [f"{name} ({binary})" for binary, name, _, _, _ in cli_found]
-        click.echo(f"\n  Detected {len(cli_found)} CLI tool(s):")
-        if click.confirm("  Add CLI tools as providers?", default=True):
-            for binary, name, ptype, mode, model in cli_found:
+        choices = [
+            questionary.Choice(
+                title=f"{name} ({binary})",
+                value=(binary, name, ptype, mode, model),
+                checked=True,
+            )
+            for binary, name, ptype, mode, model in cli_found
+        ]
+        selected = questionary.checkbox(
+            "Detected CLI tools — which to add as providers?",
+            choices=choices,
+        ).ask()
+
+        if selected:
+            for binary, name, ptype, mode, model in selected:
                 if name in existing:
                     click.echo(f"  - {name} already exists")
                 else:
@@ -230,27 +253,32 @@ def _step_prompts(brand: Brand | None):
         click.echo("  No brand configured — skipping prompts.")
         return
 
-    selected = _numbered_select(
+    choice = questionary.select(
         "How would you like to add prompts?",
-        ["Import starter prompts", "Import from JSON file", "Skip"],
-    )
+        choices=[
+            questionary.Choice("Import starter prompts", value="starter"),
+            questionary.Choice("Import from JSON file", value="file"),
+            questionary.Choice("Skip", value="skip"),
+        ],
+    ).ask()
 
-    if not selected or selected[0] == 2:
+    if not choice or choice == "skip":
         click.echo("  Skipping prompts.")
         return
 
     qs = QueryService()
 
-    if selected[0] == 0:
-        # Load starter prompts from project
+    if choice == "starter":
         starter_path = _find_starter_prompts()
         if not starter_path:
             click.echo("  ✗ Could not find prompts_import.json")
             return
         _import_prompts_file(qs, starter_path, brand)
 
-    elif selected[0] == 1:
-        path = click.prompt("  Path to JSON file")
+    elif choice == "file":
+        path = questionary.path("Path to JSON file:").ask()
+        if not path:
+            return
         path = os.path.expanduser(path)
         if not os.path.exists(path):
             click.echo(f"  ✗ File not found: {path}")
@@ -291,14 +319,6 @@ def _import_prompts_file(qs: QueryService, path: str, brand: Brand) -> None:
 
 # ── Main command ──────────────────────────────────────────────────────
 
-STEPS = {
-    "keys": _step_keys,
-    "brand": _step_brand,
-    "providers": _step_providers,
-    "prompts": None,  # handled specially because it needs brand
-}
-
-
 @click.command()
 @click.option("--step", type=click.Choice(["keys", "brand", "providers", "prompts"]), default=None, help="Run a single step")
 def setup(step):
@@ -321,7 +341,6 @@ def setup(step):
         elif step == "providers":
             _step_providers()
         elif step == "prompts":
-            # Need to find existing brand
             qs = QueryService()
             brands = qs.get_brands()
             if brands:
