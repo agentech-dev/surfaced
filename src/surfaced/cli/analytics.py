@@ -84,7 +84,29 @@ def _format_csv(rows: list[dict]) -> str:
 def analytics(query_name, brand, days, fmt):
     """Run a pre-built analytics query.
 
-    Available queries: mention_frequency, share_of_voice, provider_comparison, consistency, summary
+    \b
+    Available queries:
+      summary              Overall dashboard: total runs, mention rate, avg latency
+      mention_frequency    Mention rate over time, grouped by day
+      share_of_voice       Brand vs competitor mention share, by prompt category
+      provider_comparison  Visibility comparison across AI providers
+      consistency          Response stability for repeated prompts
+
+    \b
+    Examples:
+      surfaced analytics summary --brand "Acme" --days 30
+      surfaced analytics mention_frequency --brand "Acme" --days 7
+      surfaced analytics provider_comparison --brand "Acme" --days 30
+      surfaced analytics share_of_voice --brand "Acme" --format json
+
+    \b
+    CONTEXT FOR AGENTS:
+      This is the primary way to read results after running campaigns.
+      Start with 'summary' for an overview, then drill into specific queries.
+      --brand accepts a name or UUID. --days controls the lookback window.
+      Use --format json for structured output you can parse. Use --format csv
+      for spreadsheet-compatible output. The queries are SQL files in
+      clickhouse/queries/ — you can inspect them to understand the exact metrics.
     """
     queries_dir = _find_queries_dir()
     if not queries_dir:

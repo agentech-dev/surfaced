@@ -40,7 +40,24 @@ def _format_campaign(campaign: Campaign, fmt: str) -> str:
 
 @click.group()
 def campaigns():
-    """View campaign history."""
+    """View campaign history.
+
+    \b
+    A campaign is created each time you run 'surfaced run'. It records the
+    filters used, how many prompts were executed, and the completion status.
+
+    \b
+    Examples:
+      surfaced campaigns list
+      surfaced campaigns show <id>
+
+    \b
+    CONTEXT FOR AGENTS:
+      Campaigns are read-only records of past runs. Use 'campaigns list' to
+      find a campaign ID, then 'campaigns show <id>' for details. For actual
+      results data (mention rates, response text), use 'surfaced analytics'
+      instead. Campaigns are created automatically by 'surfaced run'.
+    """
     pass
 
 

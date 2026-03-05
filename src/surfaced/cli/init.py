@@ -51,8 +51,17 @@ def run_schema_init(host: str = "localhost", port: int = 8123) -> int:
 def init(host, port):
     """Initialize the ClickHouse database schema.
 
+    \b
     Runs all table and materialized view SQL files in order.
     Requires a running ClickHouse server (chv run server).
+    Safe to run multiple times — uses CREATE TABLE IF NOT EXISTS.
+
+    \b
+    CONTEXT FOR AGENTS:
+      You usually don't need to call this directly — 'surfaced bootstrap'
+      runs it automatically. Use this only if you need to re-apply schema
+      on an already-running ClickHouse instance. Tables are stored in
+      clickhouse/tables/ and materialized views in clickhouse/materialized_views/.
     """
     run_schema_init(host, port)
 

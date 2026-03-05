@@ -41,7 +41,29 @@ def _format_brand(brand: Brand, fmt: str) -> str:
 
 @click.group()
 def brands():
-    """Manage brands."""
+    """Manage brands.
+
+    \b
+    A brand is the entity you are tracking across AI responses. Each brand
+    has a name, optional domain, aliases (alternate names the AI might use),
+    and competitors (other brands to track in comparison).
+
+    \b
+    Examples:
+      surfaced brands add --name "Acme" --domain acme.com --aliases "ACME,Acme Corp" --competitors "Globex,Initech"
+      surfaced brands list
+      surfaced brands show <id>
+      surfaced brands edit <id> --competitors "Globex,Initech,Umbrella"
+      surfaced brands delete <id>
+
+    \b
+    CONTEXT FOR AGENTS:
+      You need at least one brand before you can run campaigns. The brand name
+      and aliases are used to detect mentions in AI responses. Competitors are
+      tracked for share-of-voice analytics. Use 'surfaced brands list' to find
+      brand IDs needed by other commands (prompts, run, analytics).
+      Most commands accept --brand by name, but prompts require the UUID.
+    """
     pass
 
 
@@ -53,7 +75,16 @@ def brands():
 @click.option("--competitors", default="", help="Comma-separated competitors")
 @click.option("--format", "fmt", default="text", type=click.Choice(["text", "json"]))
 def add(name, domain, description, aliases, competitors, fmt):
-    """Add a new brand."""
+    """Add a new brand.
+
+    \b
+    CONTEXT FOR AGENTS:
+      --aliases should include all variations of the brand name that AI models
+      might use (e.g. abbreviations, full legal name). --competitors should list
+      the main competitors you want to compare against in share-of-voice reports.
+      After adding a brand, add prompts with 'surfaced prompts add --brand <id>'
+      or import with 'surfaced prompts import'.
+    """
     brand = Brand(
         name=name,
         domain=domain,

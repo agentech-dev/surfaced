@@ -87,6 +87,17 @@ def providers():
       surfaced providers add --type codex_cli --model codex
       surfaced providers add --interactive
       surfaced providers list
+
+    \b
+    CONTEXT FOR AGENTS:
+      Providers define which AI models to query during campaigns. API providers
+      need the corresponding API key in ~/.surfaced/.env. CLI providers need
+      the binary installed (e.g. 'claude', 'codex', 'gemini').
+      You need at least one provider before running campaigns.
+      Use 'surfaced providers add --type <type>' — defaults are filled in
+      automatically. Only --type is required. Use 'surfaced providers list' to
+      verify what is configured. After adding providers, run campaigns with
+      'surfaced run --brand <name>'.
     """
     pass
 

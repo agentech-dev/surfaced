@@ -55,8 +55,28 @@ def _ping_clickhouse(host: str = "localhost", port: int = 8123) -> bool:
 def bootstrap(skip_cron, skip_cli_tools, host, port):
     """Set up all infrastructure for surfaced.
 
+    \b
     Installs chv, ClickHouse, starts the server, initializes the schema,
     creates .env, and optionally installs CLI tools and cron entries.
+    Idempotent — safe to run multiple times.
+
+    \b
+    What it does (in order):
+      1. Install chv (ClickHouse version manager)
+      2. Install ClickHouse binary via chv
+      3. Start ClickHouse server if not running
+      4. Run schema migrations (CREATE TABLE statements)
+      5. Copy .env.example → .env if missing
+      6. Install Node.js if needed, then claude/codex/gemini CLI tools
+      7. Set up cron for scheduled campaigns
+
+    \b
+    CONTEXT FOR AGENTS:
+      Run this once after installation. It is non-interactive and requires
+      no input. After bootstrap completes, run 'surfaced setup' to
+      configure API keys, brands, providers, and prompts interactively.
+      Use --skip-cli-tools if you only want API providers (no Node.js needed).
+      Use --skip-cron if you don't want scheduled campaigns.
     """
     project_dir = _find_project_dir()
 

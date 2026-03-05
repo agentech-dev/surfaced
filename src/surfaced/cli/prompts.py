@@ -48,7 +48,37 @@ def _format_prompt(prompt: Prompt, fmt: str) -> str:
 
 @click.group()
 def prompts():
-    """Manage prompts."""
+    """Manage prompts.
+
+    \b
+    Prompts are the questions sent to AI providers during campaigns.
+    Each prompt belongs to a brand and has a category and optional tags.
+
+    \b
+    Categories:
+      brand_query             Direct questions about the brand's space
+      competitor_comparison   Head-to-head comparison prompts
+      industry_query          General industry/market questions
+      feature_query           Questions about specific features or capabilities
+      problem_solving         "How do I solve X?" style questions
+
+    \b
+    Tags are used for scheduling (daily, weekly, monthly) and filtering.
+
+    \b
+    Examples:
+      surfaced prompts add --text "Best tools for X?" --category brand_query --brand <id> --tags daily
+      surfaced prompts list --brand <id> --category brand_query
+      surfaced prompts import prompts.json
+
+    \b
+    CONTEXT FOR AGENTS:
+      You need at least one brand before adding prompts (use its UUID as --brand).
+      For bulk setup, use 'surfaced prompts import' with a JSON file. The JSON
+      format is: [{"text": "...", "category": "brand_query", "brand_id": "<uuid>", "tags": ["daily"]}].
+      Tags like 'daily', 'weekly', 'monthly' control which prompts run on cron schedules.
+      After adding prompts, run them with 'surfaced run --brand <name>'.
+    """
     pass
 
 
@@ -148,7 +178,14 @@ def delete(prompt_id):
 def import_prompts(filepath, fmt):
     """Bulk import prompts from a JSON file.
 
-    JSON file should contain an array of objects with: text, category, brand_id, tags (optional).
+    \b
+    JSON format: [{"text": "...", "category": "brand_query", "brand_id": "<uuid>", "tags": ["daily"]}]
+
+    \b
+    CONTEXT FOR AGENTS:
+      The starter prompts file is at ~/.surfaced/prompts_import.json (or
+      prompts_import.json in the project root). You can use it as a template.
+      The brand_id in the JSON must be a valid UUID from 'surfaced brands list'.
     """
     with open(filepath) as f:
         data = json.load(f)

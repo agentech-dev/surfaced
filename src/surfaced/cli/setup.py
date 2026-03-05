@@ -324,8 +324,27 @@ def _import_prompts_file(qs: QueryService, path: str, brand: Brand) -> None:
 def setup(step):
     """Interactive setup wizard.
 
-    Walks through 4 steps: API keys, brand, providers, and prompts.
-    Use --step to run a single step.
+    \b
+    Walks through 4 steps:
+      Step 1 (keys)      — Configure API keys (written to ~/.surfaced/.env)
+      Step 2 (brand)     — Create a brand to track (name, aliases, competitors)
+      Step 3 (providers) — Auto-create providers from detected keys and CLI tools
+      Step 4 (prompts)   — Import starter prompts or load from a JSON file
+
+    \b
+    Use --step to run a single step, e.g.:
+      surfaced setup --step keys
+      surfaced setup --step providers
+
+    \b
+    CONTEXT FOR AGENTS:
+      This command is interactive and requires terminal input. If you are
+      automating setup, use the individual non-interactive commands instead:
+        - Write API keys directly to ~/.surfaced/.env
+        - surfaced brands add --name "X" --aliases "A,B" --competitors "C,D"
+        - surfaced providers add --type anthropic_api
+        - surfaced prompts import prompts_import.json
+      After setup, run 'surfaced run --brand <name>' to execute a campaign.
     """
     click.echo("════════════════════════════════════════════════════")
     click.echo(" Surfaced Setup Wizard")

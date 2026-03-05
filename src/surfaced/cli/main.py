@@ -46,7 +46,29 @@ def _load_env():
 @click.group()
 @click.version_option(version="0.1.0")
 def cli():
-    """Surfaced - Open-source AI visibility tracking."""
+    """Surfaced - Open-source AI visibility tracking.
+
+    \b
+    Surfaced runs prompts against AI providers (Claude, GPT, Gemini etc.),
+    records whether your brand is mentioned in responses, and provides
+    analytics on brand visibility over time. Data is stored in ClickHouse.
+
+    \b
+    Typical workflow:
+      1. surfaced bootstrap     Install infrastructure (ClickHouse, CLI tools)
+      2. surfaced setup         Interactive wizard (API keys, brand, providers, prompts)
+      3. surfaced run            Execute prompts against providers
+      4. surfaced analytics      View brand visibility results
+
+    \b
+    CONTEXT FOR AGENTS:
+      This is the top-level command group. If you are setting up from scratch,
+      run 'surfaced bootstrap' then 'surfaced setup'. If already configured,
+      use 'surfaced run --brand <name>' to execute campaigns and
+      'surfaced analytics summary --brand <name>' to view results.
+      Use --format json on any subcommand for machine-readable output.
+      API keys are loaded automatically from ~/.surfaced/.env.
+    """
     _load_env()
 
 

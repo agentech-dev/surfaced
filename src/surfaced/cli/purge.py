@@ -48,11 +48,24 @@ def _find_stores() -> list[tuple[str, str, Path]]:
 def purge(yes):
     """Delete known CLI provider history and memory stores.
 
+    \b
     This is a destructive operation. It finds and removes local history files
     for CLI providers (e.g. Claude Code sessions, memory, todos).
 
-    Not called automatically by any command. Intended for manual use or
-    future autonomous mode on clean machines.
+    \b
+    Locations checked:
+      Claude CLI:  ~/.claude/projects, ~/.claude/todos
+      Codex CLI:   ~/.codex/sqlite, ~/.codex/shell_snapshots, ~/.codex/log, ~/.codex/tmp
+      Gemini CLI:  ~/.gemini/history, ~/.gemini/tmp
+
+    \b
+    CONTEXT FOR AGENTS:
+      This is for cleaning up CLI provider state between test runs to ensure
+      responses are not influenced by prior conversation history. It is never
+      called automatically. Only use this when you need a clean slate for
+      CLI-based providers. Use --yes to skip the confirmation prompt.
+      This does NOT delete any surfaced data (brands, prompts, results) —
+      it only affects the CLI tools' own local storage.
     """
     found = _find_stores()
 
