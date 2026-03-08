@@ -50,3 +50,30 @@ def test_partial_competitors():
     brand = _make_brand()
     result = find_competitors_mentioned("Globex has a strong offering.", brand)
     assert result == ["Globex"]
+
+
+def test_empty_response():
+    brand = _make_brand()
+    assert not check_brand_mentioned("", brand)
+    assert find_competitors_mentioned("", brand) == []
+
+
+def test_empty_aliases():
+    brand = _make_brand(aliases=[])
+    # Brand name "Acme" still matches case-insensitively
+    assert check_brand_mentioned("Acme is great.", brand)
+    assert check_brand_mentioned("ACME is great.", brand)
+    # But an alias-only term like "Acme Corp" should NOT match
+    assert not check_brand_mentioned("Acme Corp is great.", _make_brand(name="XYZ", aliases=[]))
+
+
+def test_competitors_case_insensitive():
+    brand = _make_brand()
+    result = find_competitors_mentioned("globex is a competitor.", brand)
+    assert result == ["Globex"]
+
+
+def test_empty_competitors():
+    brand = _make_brand(competitors=[])
+    result = find_competitors_mentioned("Globex and Initech", brand)
+    assert result == []
