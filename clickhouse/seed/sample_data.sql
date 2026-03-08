@@ -13,11 +13,11 @@ VALUES (
 );
 
 -- Sample provider
-INSERT INTO providers (id, name, provider_type, execution_mode, model, rate_limit_rpm)
+INSERT INTO providers (id, name, provider, execution_mode, model, rate_limit_rpm)
 VALUES (
     '00000000-0000-0000-0000-000000000010',
     'Claude Sonnet',
-    'anthropic_api',
+    'anthropic',
     'api',
     'claude-sonnet-4-6',
     60

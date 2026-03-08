@@ -2,7 +2,7 @@ CREATE TABLE IF NOT EXISTS providers
 (
     id UUID,
     name String,
-    provider_type String,
+    provider String,
     execution_mode Enum8('api' = 1, 'cli' = 2),
     model String,
     config String DEFAULT '{}',

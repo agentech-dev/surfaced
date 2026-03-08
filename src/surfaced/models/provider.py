@@ -10,7 +10,7 @@ from uuid import UUID, uuid4
 @dataclass
 class Provider:
     name: str
-    provider_type: str
+    provider: str
     execution_mode: str  # 'api' or 'cli'
     model: str
     id: UUID = field(default_factory=uuid4)
@@ -25,7 +25,7 @@ class Provider:
         return cls(
             id=UUID(str(d["id"])) if not isinstance(d["id"], UUID) else d["id"],
             name=d["name"],
-            provider_type=d["provider_type"],
+            provider=d["provider"],
             execution_mode=d["execution_mode"],
             model=d["model"],
             config=d.get("config", "{}"),

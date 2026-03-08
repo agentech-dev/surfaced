@@ -17,8 +17,7 @@ surfaced brands add --name "YourBrand" --domain yourbrand.com \
   --aliases "YB,Your Brand" --competitors "Competitor1,Competitor2"
 
 # 5. Add a provider
-surfaced providers add --name "Claude Sonnet" --type anthropic_api --mode api \
-  --model claude-sonnet-4-6
+surfaced providers add --provider anthropic --mode api
 
 # 6. Add prompts
 surfaced prompts add --text "What are the best tools for X?" \
@@ -68,12 +67,16 @@ Available in `clickhouse/queries/`:
 - `provider_comparison` - Visibility comparison across AI providers
 - `consistency` - Response stability for specific prompts
 
-## Provider Types
+## Providers
 
-| Type | Mode | Description |
+| Provider | Mode | Description |
 |---|---|---|
-| `anthropic_api` | api | Anthropic SDK, requires ANTHROPIC_API_KEY |
-| `claude_cli` | cli | Claude Code CLI subprocess |
+| `anthropic` | api | Anthropic SDK, requires ANTHROPIC_API_KEY |
+| `anthropic` | cli | Claude Code CLI subprocess |
+| `openai` | api | OpenAI SDK, requires OPENAI_API_KEY |
+| `openai` | cli | OpenAI Codex CLI subprocess |
+| `google` | api | Google Gemini SDK, requires GEMINI_API_KEY |
+| `google` | cli | Google Gemini CLI subprocess |
 
 ## Prompt Categories
 

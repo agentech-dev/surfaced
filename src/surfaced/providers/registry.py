@@ -1,4 +1,4 @@
-"""Provider registry - maps provider_type to implementation class."""
+"""Provider registry - maps (provider, mode) to implementation class."""
 
 from __future__ import annotations
 
@@ -11,19 +11,20 @@ from surfaced.providers.gemini_api import GeminiAPIProvider
 from surfaced.providers.gemini_cli import GeminiCLIProvider
 from surfaced.providers.openai_api import OpenAIAPIProvider
 
-PROVIDER_MAP: dict[str, type[AIProvider]] = {
-    "anthropic_api": AnthropicAPIProvider,
-    "openai_api": OpenAIAPIProvider,
-    "gemini_api": GeminiAPIProvider,
-    "claude_cli": ClaudeCLIProvider,
-    "codex_cli": CodexCLIProvider,
-    "gemini_cli": GeminiCLIProvider,
+PROVIDER_MAP: dict[tuple[str, str], type[AIProvider]] = {
+    ("anthropic", "api"): AnthropicAPIProvider,
+    ("openai", "api"):    OpenAIAPIProvider,
+    ("google", "api"):    GeminiAPIProvider,
+    ("anthropic", "cli"): ClaudeCLIProvider,
+    ("openai", "cli"):    CodexCLIProvider,
+    ("google", "cli"):    GeminiCLIProvider,
 }
 
 
 def get_provider(provider: Provider) -> AIProvider:
     """Instantiate an AIProvider from a Provider database record."""
-    cls = PROVIDER_MAP.get(provider.provider_type)
+    key = (provider.provider, provider.execution_mode)
+    cls = PROVIDER_MAP.get(key)
     if cls is None:
-        raise ValueError(f"Unknown provider type: {provider.provider_type}")
+        raise ValueError(f"Unknown provider: {key}")
     return cls(model=provider.model)

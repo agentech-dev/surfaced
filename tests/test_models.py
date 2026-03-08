@@ -60,7 +60,7 @@ def test_provider_from_dict():
     data = {
         "id": "550e8400-e29b-41d4-a716-446655440001",
         "name": "Claude API",
-        "provider_type": "anthropic_api",
+        "provider": "anthropic",
         "execution_mode": "api",
         "model": "claude-sonnet-4-6",
         "config": "{}",

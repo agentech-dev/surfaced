@@ -184,9 +184,9 @@ def _step_providers():
 
     # API providers based on configured keys
     api_providers = [
-        ("ANTHROPIC_API_KEY", "Claude Sonnet 4.6", "anthropic_api", "api", "claude-sonnet-4-6"),
-        ("OPENAI_API_KEY", "GPT-5.2", "openai_api", "api", "gpt-5.2"),
-        ("GEMINI_API_KEY", "Gemini 3.1 Pro", "gemini_api", "api", "gemini-3.1-pro-preview"),
+        ("ANTHROPIC_API_KEY", "Claude Sonnet 4.6", "anthropic", "api", "claude-sonnet-4-6"),
+        ("OPENAI_API_KEY", "GPT-5.2", "openai", "api", "gpt-5.2"),
+        ("GEMINI_API_KEY", "Gemini 3.1 Pro", "google", "api", "gemini-3.1-pro-preview"),
     ]
 
     for env_key, name, ptype, mode, model in api_providers:
@@ -196,7 +196,7 @@ def _step_providers():
             else:
                 provider = Provider(
                     name=name,
-                    provider_type=ptype,
+                    provider=ptype,
                     execution_mode=mode,
                     model=model,
                 )
@@ -207,9 +207,9 @@ def _step_providers():
 
     # CLI providers based on installed tools
     cli_providers = [
-        ("claude", "Claude CLI", "claude_cli", "cli", "claude-sonnet-4-6"),
-        ("codex", "Codex CLI", "codex_cli", "cli", "codex"),
-        ("gemini", "Gemini CLI", "gemini_cli", "cli", "gemini-3.1-pro-preview"),
+        ("claude", "Claude CLI", "anthropic", "cli", "claude-sonnet-4-6"),
+        ("codex", "Codex CLI", "openai", "cli", "codex"),
+        ("gemini", "Gemini CLI", "google", "cli", "gemini-3.1-pro-preview"),
     ]
 
     cli_found = [(binary, name, ptype, mode, model) for binary, name, ptype, mode, model in cli_providers if shutil.which(binary)]
@@ -234,7 +234,7 @@ def _step_providers():
                 else:
                     provider = Provider(
                         name=name,
-                        provider_type=ptype,
+                        provider=ptype,
                         execution_mode=mode,
                         model=model,
                     )
@@ -342,7 +342,7 @@ def setup(step):
       automating setup, use the individual non-interactive commands instead:
         - Write API keys directly to ~/.surfaced/.env
         - surfaced brands add --name "X" --aliases "A,B" --competitors "C,D"
-        - surfaced providers add --type anthropic_api
+        - surfaced providers add --provider anthropic --mode api
         - surfaced prompts import prompts_import.json
       After setup, run 'surfaced run --brand <name>' to execute prompts.
     """

@@ -75,13 +75,13 @@ class QueryService:
         self.db.insert_rows(
             "providers",
             [[
-                str(provider.id), provider.name, provider.provider_type,
+                str(provider.id), provider.name, provider.provider,
                 provider.execution_mode, provider.model, provider.config,
                 provider.rate_limit_rpm, provider.is_active,
                 provider.created_at, provider.updated_at,
             ]],
             column_names=[
-                "id", "name", "provider_type", "execution_mode",
+                "id", "name", "provider", "execution_mode",
                 "model", "config", "rate_limit_rpm", "is_active",
                 "created_at", "updated_at",
             ],
