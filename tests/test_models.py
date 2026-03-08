@@ -5,7 +5,7 @@ from uuid import UUID, uuid4
 
 from surfaced.models.brand import Brand
 from surfaced.models.prompt import Prompt
-from surfaced.models.prompt_run import PromptRun
+from surfaced.models.answer import Answer
 from surfaced.models.provider import Provider
 from surfaced.models.run import Run
 
@@ -93,7 +93,7 @@ def test_run_from_dict():
     assert run.total_prompts == 10
 
 
-def test_prompt_run_from_dict():
+def test_answer_from_dict():
     now = datetime.now()
     data = {
         "id": uuid4(),
@@ -115,6 +115,6 @@ def test_prompt_run_from_dict():
         "competitors_mentioned": ["Globex"],
         "created_at": now,
     }
-    run = PromptRun.from_dict(data)
-    assert run.status == "success"
-    assert run.brand_mentioned == 1
+    answer = Answer.from_dict(data)
+    assert answer.status == "success"
+    assert answer.brand_mentioned == 1

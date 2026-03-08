@@ -1,4 +1,4 @@
-"""PromptRun model."""
+"""Answer model."""
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ from uuid import UUID, uuid4
 
 
 @dataclass
-class PromptRun:
+class Answer:
     run_id: UUID
     prompt_id: UUID
     provider_id: UUID
@@ -29,7 +29,7 @@ class PromptRun:
     created_at: datetime = field(default_factory=datetime.now)
 
     @classmethod
-    def from_dict(cls, d: dict) -> PromptRun:
+    def from_dict(cls, d: dict) -> Answer:
         return cls(
             id=UUID(str(d["id"])) if not isinstance(d["id"], UUID) else d["id"],
             run_id=UUID(str(d["run_id"])) if not isinstance(d["run_id"], UUID) else d["run_id"],

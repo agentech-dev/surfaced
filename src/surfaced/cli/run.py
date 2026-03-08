@@ -22,7 +22,7 @@ def run(category, provider, tag, brand, prompt_id, dry_run, no_history):
     \b
     Executes matching prompts against all active providers and stores the
     results (response text, brand mention detection, latency, token counts)
-    in the prompt_runs table. Each execution creates a run record.
+    in the answers table. Each execution creates a run record.
 
     \b
     Filter what runs:

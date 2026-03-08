@@ -28,6 +28,6 @@ SELECT
     count() AS total_runs,
     sum(brand_mentioned) AS mentions,
     avg(latency_ms) AS avg_latency_ms
-FROM prompt_runs
+FROM answers
 WHERE status = 'success'
 GROUP BY day, brand_id, provider_name, prompt_category;

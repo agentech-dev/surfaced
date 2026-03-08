@@ -8,7 +8,7 @@ from uuid import UUID
 from surfaced.db.client import DBClient
 from surfaced.models.brand import Brand
 from surfaced.models.prompt import Prompt
-from surfaced.models.prompt_run import PromptRun
+from surfaced.models.answer import Answer
 from surfaced.models.provider import Provider
 from surfaced.models.run import Run
 
@@ -219,20 +219,20 @@ class QueryService:
         run.updated_at = datetime.now()
         return self.insert_run(run)
 
-    # --- Prompt Runs ---
+    # --- Answers ---
 
-    def insert_prompt_run(self, run: PromptRun) -> PromptRun:
+    def insert_answer(self, answer: Answer) -> Answer:
         self.db.insert_rows(
-            "prompt_runs",
+            "answers",
             [[
-                str(run.id), str(run.run_id), str(run.prompt_id),
-                str(run.provider_id), str(run.brand_id),
-                run.prompt_text, run.prompt_category, run.response_text,
-                run.model, run.provider_name, run.latency_ms,
-                run.input_tokens, run.output_tokens,
-                run.status, run.error_message,
-                run.brand_mentioned, run.competitors_mentioned,
-                run.created_at,
+                str(answer.id), str(answer.run_id), str(answer.prompt_id),
+                str(answer.provider_id), str(answer.brand_id),
+                answer.prompt_text, answer.prompt_category, answer.response_text,
+                answer.model, answer.provider_name, answer.latency_ms,
+                answer.input_tokens, answer.output_tokens,
+                answer.status, answer.error_message,
+                answer.brand_mentioned, answer.competitors_mentioned,
+                answer.created_at,
             ]],
             column_names=[
                 "id", "run_id", "prompt_id", "provider_id", "brand_id",
@@ -244,14 +244,14 @@ class QueryService:
                 "created_at",
             ],
         )
-        return run
+        return answer
 
-    def get_prompt_runs(
+    def get_answers(
         self,
         run_id: UUID | None = None,
         brand_id: UUID | None = None,
         limit: int = 100,
-    ) -> list[PromptRun]:
+    ) -> list[Answer]:
         conditions = []
         params = {}
         if run_id:
@@ -261,9 +261,9 @@ class QueryService:
             conditions.append("brand_id = {brand_id:UUID}")
             params["brand_id"] = str(brand_id)
 
-        query = "SELECT * FROM prompt_runs"
+        query = "SELECT * FROM answers"
         if conditions:
             query += " WHERE " + " AND ".join(conditions)
         query += f" ORDER BY created_at DESC LIMIT {limit}"
         rows = self.db.execute(query, parameters=params if params else None)
-        return [PromptRun.from_dict(r) for r in rows]
+        return [Answer.from_dict(r) for r in rows]

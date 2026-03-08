@@ -14,7 +14,7 @@ from surfaced.db.queries import QueryService
 from surfaced.engine.analyzer import check_brand_mentioned, find_competitors_mentioned
 from surfaced.engine.rate_limiter import RateLimiter
 from surfaced.engine.template import render_prompt
-from surfaced.models.prompt_run import PromptRun
+from surfaced.models.answer import Answer
 from surfaced.models.run import Run
 from surfaced.providers.registry import get_provider
 
@@ -116,7 +116,7 @@ def execute_run(
                             brand_mentioned = 1 if check_brand_mentioned(response.text, brand) else 0
                             competitors_mentioned = find_competitors_mentioned(response.text, brand)
 
-                        prompt_run = PromptRun(
+                        answer = Answer(
                             run_id=run_record.id,
                             prompt_id=prompt.id,
                             provider_id=prov_record.id,
@@ -133,7 +133,7 @@ def execute_run(
                             brand_mentioned=brand_mentioned,
                             competitors_mentioned=competitors_mentioned,
                         )
-                        qs.insert_prompt_run(prompt_run)
+                        qs.insert_answer(answer)
                         completed += 1
                         click.echo(f"  [{completed}/{total}] {prov_record.name}: {prompt.text[:50]}... ({'mentioned' if brand_mentioned else 'not mentioned'})")
                         break
@@ -147,7 +147,7 @@ def execute_run(
                             time.sleep(wait)
                         else:
                             errors += 1
-                            prompt_run = PromptRun(
+                            answer = Answer(
                                 run_id=run_record.id,
                                 prompt_id=prompt.id,
                                 provider_id=prov_record.id,
@@ -161,7 +161,7 @@ def execute_run(
                                 status="error",
                                 error_message=traceback.format_exc(),
                             )
-                            qs.insert_prompt_run(prompt_run)
+                            qs.insert_answer(answer)
                             click.echo(f"  [{completed + errors}/{total}] FAILED: {e}")
 
     except KeyboardInterrupt:

@@ -1,4 +1,4 @@
-CREATE TABLE IF NOT EXISTS prompt_runs
+CREATE TABLE IF NOT EXISTS answers
 (
     id UUID,
     run_id UUID,

@@ -8,7 +8,7 @@ SELECT
     round(sum(brand_mentioned) / count() * 100, 1) AS mention_rate_pct,
     round(avg(latency_ms)) AS avg_latency_ms,
     round(avg(input_tokens + output_tokens)) AS avg_tokens
-FROM prompt_runs
+FROM answers
 WHERE brand_id = {brand_id:UUID}
   AND created_at >= now() - INTERVAL {days:Int32} DAY
   AND status = 'success'

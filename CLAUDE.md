@@ -54,7 +54,7 @@ All commands support `--format json` for machine-readable output.
 - `runs` - Execution run records
 
 **MergeTree table** (append-only):
-- `prompt_runs` - Individual execution results with denormalized fields
+- `answers` - Individual execution results with denormalized fields
 
 **Materialized view**:
 - `brand_mention_daily` - Daily aggregates of mention rates
