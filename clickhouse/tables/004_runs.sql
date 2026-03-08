@@ -1,4 +1,4 @@
-CREATE TABLE IF NOT EXISTS campaigns
+CREATE TABLE IF NOT EXISTS runs
 (
     id UUID,
     name String,

@@ -24,7 +24,7 @@ surfaced providers add --name "Claude Sonnet" --type anthropic_api --mode api \
 surfaced prompts add --text "What are the best tools for X?" \
   --category brand_query --brand <brand-id> --tags daily
 
-# 7. Run a campaign
+# 7. Run prompts
 surfaced run --brand "YourBrand"
 
 # 8. View results
@@ -39,8 +39,8 @@ surfaced analytics summary --brand "YourBrand" --days 30
 | `surfaced brands {add,list,show,edit,delete}` | Manage brands |
 | `surfaced prompts {add,list,show,edit,delete,import}` | Manage prompts |
 | `surfaced providers {add,list,show,delete}` | Manage AI providers |
-| `surfaced run [--category X] [--provider Y] [--tag Z] [--brand B] [--dry-run]` | Execute campaign |
-| `surfaced campaigns {list,show}` | View campaign history |
+| `surfaced run [--category X] [--provider Y] [--tag Z] [--brand B] [--dry-run]` | Execute prompts against providers |
+| `surfaced runs {list,show}` | View run history |
 | `surfaced analytics <query> --brand <id-or-name> [--days 30] [--format table\|json\|csv]` | Run analytics |
 
 All commands support `--format json` for machine-readable output.
@@ -51,7 +51,7 @@ All commands support `--format json` for machine-readable output.
 - `brands` - Brand definitions with aliases and competitors
 - `providers` - AI provider configs (api/cli mode, model, rate limits)
 - `prompts` - Prompt library with categories and tags
-- `campaigns` - Execution campaign records
+- `runs` - Execution run records
 
 **MergeTree table** (append-only):
 - `prompt_runs` - Individual execution results with denormalized fields
@@ -84,9 +84,9 @@ Available in `clickhouse/queries/`:
 Tag prompts with frequency tags (`daily`, `weekly`, `monthly`), then use cron:
 
 ```
-0 6 * * *   cd /path/to/surfaced && ./scripts/run-campaign.sh daily
-0 6 * * 1   cd /path/to/surfaced && ./scripts/run-campaign.sh weekly
-0 6 1 * *   cd /path/to/surfaced && ./scripts/run-campaign.sh monthly
+0 6 * * *   cd /path/to/surfaced && ./scripts/surfaced-runner.sh daily
+0 6 * * 1   cd /path/to/surfaced && ./scripts/surfaced-runner.sh weekly
+0 6 1 * *   cd /path/to/surfaced && ./scripts/surfaced-runner.sh monthly
 ```
 
 ## Common Workflows

@@ -4,10 +4,10 @@ from datetime import datetime
 from uuid import UUID, uuid4
 
 from surfaced.models.brand import Brand
-from surfaced.models.campaign import Campaign
 from surfaced.models.prompt import Prompt
 from surfaced.models.prompt_run import PromptRun
 from surfaced.models.provider import Provider
+from surfaced.models.run import Run
 
 
 def test_brand_from_dict():
@@ -74,11 +74,11 @@ def test_provider_from_dict():
     assert provider.execution_mode == "api"
 
 
-def test_campaign_from_dict():
+def test_run_from_dict():
     now = datetime.now()
     data = {
         "id": uuid4(),
-        "name": "Test Campaign",
+        "name": "Test Run",
         "status": "running",
         "filters": "{}",
         "total_prompts": 10,
@@ -88,16 +88,16 @@ def test_campaign_from_dict():
         "created_at": now,
         "updated_at": now,
     }
-    campaign = Campaign.from_dict(data)
-    assert campaign.name == "Test Campaign"
-    assert campaign.total_prompts == 10
+    run = Run.from_dict(data)
+    assert run.name == "Test Run"
+    assert run.total_prompts == 10
 
 
 def test_prompt_run_from_dict():
     now = datetime.now()
     data = {
         "id": uuid4(),
-        "campaign_id": uuid4(),
+        "run_id": uuid4(),
         "prompt_id": uuid4(),
         "provider_id": uuid4(),
         "brand_id": uuid4(),

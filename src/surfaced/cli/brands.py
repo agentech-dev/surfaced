@@ -58,7 +58,7 @@ def brands():
 
     \b
     CONTEXT FOR AGENTS:
-      You need at least one brand before you can run campaigns. The brand name
+      You need at least one brand before you can run prompts. The brand name
       and aliases are used to detect mentions in AI responses. Competitors are
       tracked for share-of-voice analytics. Use 'surfaced brands list' to find
       brand IDs needed by other commands (prompts, run, analytics).

@@ -1,11 +1,11 @@
-"""Run campaign CLI command."""
+"""Run CLI command — execute prompts against providers."""
 
 from uuid import UUID
 
 import click
 
 from surfaced.db.queries import QueryService
-from surfaced.engine.runner import run_campaign
+from surfaced.engine.runner import execute_run
 
 
 @click.command()
@@ -22,7 +22,7 @@ def run(category, provider, tag, brand, prompt_id, dry_run, no_history):
     \b
     Executes matching prompts against all active providers and stores the
     results (response text, brand mention detection, latency, token counts)
-    in the prompt_runs table. Each run creates a campaign record.
+    in the prompt_runs table. Each execution creates a run record.
 
     \b
     Filter what runs:
@@ -46,7 +46,7 @@ def run(category, provider, tag, brand, prompt_id, dry_run, no_history):
       (3) API keys in ~/.surfaced/.env for API providers or CLI tools installed
       for CLI providers. Use --dry-run first to verify what will execute.
       After running, view results with 'surfaced analytics summary --brand <name>'.
-      Use 'surfaced campaigns list' to see past campaign runs.
+      Use 'surfaced runs list' to see past runs.
     """
     qs = QueryService()
 
@@ -64,7 +64,7 @@ def run(category, provider, tag, brand, prompt_id, dry_run, no_history):
 
     prompt_uuid = UUID(prompt_id) if prompt_id else None
 
-    run_campaign(
+    execute_run(
         qs=qs,
         category=category,
         provider_name=provider,

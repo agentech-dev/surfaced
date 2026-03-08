@@ -14,8 +14,8 @@ from surfaced.db.queries import QueryService
 from surfaced.engine.analyzer import check_brand_mentioned, find_competitors_mentioned
 from surfaced.engine.rate_limiter import RateLimiter
 from surfaced.engine.template import render_prompt
-from surfaced.models.campaign import Campaign
 from surfaced.models.prompt_run import PromptRun
+from surfaced.models.run import Run
 from surfaced.providers.registry import get_provider
 
 
@@ -23,7 +23,7 @@ MAX_RETRIES = 3
 BACKOFF_BASE = 2.0
 
 
-def run_campaign(
+def execute_run(
     qs: QueryService,
     category: str | None = None,
     provider_name: str | None = None,
@@ -32,7 +32,7 @@ def run_campaign(
     prompt_id: UUID | None = None,
     dry_run: bool = False,
     no_history: bool = False,
-) -> Campaign | None:
+) -> Run | None:
     """Execute prompts against providers and store results."""
     # Gather prompts
     prompts = qs.get_prompts(active_only=True, category=category, tag=tag, brand_id=brand_id)
@@ -79,15 +79,15 @@ def run_campaign(
             click.echo(f"Error: Provider '{prov_record.name}' failed to initialize: {e}", err=True)
             raise SystemExit(1)
 
-    # Create campaign
-    campaign = Campaign(
-        name=f"Campaign {datetime.now().strftime('%Y-%m-%d %H:%M')}",
+    # Create run record
+    run_record = Run(
+        name=f"Run {datetime.now().strftime('%Y-%m-%d %H:%M')}",
         status="running",
         filters=filters,
         total_prompts=total,
     )
-    qs.insert_campaign(campaign)
-    click.echo(f"Campaign {campaign.id} started ({total} executions)")
+    qs.insert_run(run_record)
+    click.echo(f"Run {run_record.id} started ({total} executions)")
 
     completed = 0
     errors = 0
@@ -116,8 +116,8 @@ def run_campaign(
                             brand_mentioned = 1 if check_brand_mentioned(response.text, brand) else 0
                             competitors_mentioned = find_competitors_mentioned(response.text, brand)
 
-                        run = PromptRun(
-                            campaign_id=campaign.id,
+                        prompt_run = PromptRun(
+                            run_id=run_record.id,
                             prompt_id=prompt.id,
                             provider_id=prov_record.id,
                             brand_id=prompt.brand_id,
@@ -133,7 +133,7 @@ def run_campaign(
                             brand_mentioned=brand_mentioned,
                             competitors_mentioned=competitors_mentioned,
                         )
-                        qs.insert_prompt_run(run)
+                        qs.insert_prompt_run(prompt_run)
                         completed += 1
                         click.echo(f"  [{completed}/{total}] {prov_record.name}: {prompt.text[:50]}... ({'mentioned' if brand_mentioned else 'not mentioned'})")
                         break
@@ -147,8 +147,8 @@ def run_campaign(
                             time.sleep(wait)
                         else:
                             errors += 1
-                            run = PromptRun(
-                                campaign_id=campaign.id,
+                            prompt_run = PromptRun(
+                                run_id=run_record.id,
                                 prompt_id=prompt.id,
                                 provider_id=prov_record.id,
                                 brand_id=prompt.brand_id,
@@ -161,21 +161,21 @@ def run_campaign(
                                 status="error",
                                 error_message=traceback.format_exc(),
                             )
-                            qs.insert_prompt_run(run)
+                            qs.insert_prompt_run(prompt_run)
                             click.echo(f"  [{completed + errors}/{total}] FAILED: {e}")
 
     except KeyboardInterrupt:
-        click.echo(f"\n\nCampaign interrupted. {completed} completed, {errors} failed before cancellation.")
-        campaign.completed_prompts = completed
-        campaign.status = "cancelled"
-        campaign.finished_at = datetime.now()
-        qs.update_campaign(campaign)
-        return campaign
+        click.echo(f"\n\nRun interrupted. {completed} completed, {errors} failed before cancellation.")
+        run_record.completed_prompts = completed
+        run_record.status = "cancelled"
+        run_record.finished_at = datetime.now()
+        qs.update_run(run_record)
+        return run_record
 
-    # Update campaign
-    campaign.completed_prompts = completed
-    campaign.status = "completed" if errors == 0 else "failed"
-    campaign.finished_at = datetime.now()
-    qs.update_campaign(campaign)
-    click.echo(f"\nCampaign {campaign.id} finished: {completed} succeeded, {errors} failed")
-    return campaign
+    # Update run
+    run_record.completed_prompts = completed
+    run_record.status = "completed" if errors == 0 else "failed"
+    run_record.finished_at = datetime.now()
+    qs.update_run(run_record)
+    click.echo(f"\nRun {run_record.id} finished: {completed} succeeded, {errors} failed")
+    return run_record

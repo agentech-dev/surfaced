@@ -7,10 +7,10 @@ from uuid import UUID
 
 from surfaced.db.client import DBClient
 from surfaced.models.brand import Brand
-from surfaced.models.campaign import Campaign
 from surfaced.models.prompt import Prompt
 from surfaced.models.prompt_run import PromptRun
 from surfaced.models.provider import Provider
+from surfaced.models.run import Run
 
 
 class QueryService:
@@ -181,17 +181,17 @@ class QueryService:
             prompt.is_active = 0
             self.update_prompt(prompt)
 
-    # --- Campaigns ---
+    # --- Runs ---
 
-    def insert_campaign(self, campaign: Campaign) -> Campaign:
+    def insert_run(self, run: Run) -> Run:
         self.db.insert_rows(
-            "campaigns",
+            "runs",
             [[
-                str(campaign.id), campaign.name, campaign.status,
-                campaign.filters, campaign.total_prompts,
-                campaign.completed_prompts, campaign.started_at,
-                campaign.finished_at or datetime(1970, 1, 1),
-                campaign.created_at, campaign.updated_at,
+                str(run.id), run.name, run.status,
+                run.filters, run.total_prompts,
+                run.completed_prompts, run.started_at,
+                run.finished_at or datetime(1970, 1, 1),
+                run.created_at, run.updated_at,
             ]],
             column_names=[
                 "id", "name", "status", "filters",
@@ -200,24 +200,24 @@ class QueryService:
                 "created_at", "updated_at",
             ],
         )
-        return campaign
+        return run
 
-    def get_campaigns(self, limit: int = 20) -> list[Campaign]:
+    def get_runs(self, limit: int = 20) -> list[Run]:
         rows = self.db.execute(
-            f"SELECT * FROM campaigns FINAL ORDER BY created_at DESC LIMIT {limit}"
+            f"SELECT * FROM runs FINAL ORDER BY created_at DESC LIMIT {limit}"
         )
-        return [Campaign.from_dict(r) for r in rows]
+        return [Run.from_dict(r) for r in rows]
 
-    def get_campaign(self, campaign_id: UUID) -> Campaign | None:
+    def get_run(self, run_id: UUID) -> Run | None:
         rows = self.db.execute(
-            "SELECT * FROM campaigns FINAL WHERE id = {id:UUID}",
-            parameters={"id": str(campaign_id)},
+            "SELECT * FROM runs FINAL WHERE id = {id:UUID}",
+            parameters={"id": str(run_id)},
         )
-        return Campaign.from_dict(rows[0]) if rows else None
+        return Run.from_dict(rows[0]) if rows else None
 
-    def update_campaign(self, campaign: Campaign) -> Campaign:
-        campaign.updated_at = datetime.now()
-        return self.insert_campaign(campaign)
+    def update_run(self, run: Run) -> Run:
+        run.updated_at = datetime.now()
+        return self.insert_run(run)
 
     # --- Prompt Runs ---
 
@@ -225,7 +225,7 @@ class QueryService:
         self.db.insert_rows(
             "prompt_runs",
             [[
-                str(run.id), str(run.campaign_id), str(run.prompt_id),
+                str(run.id), str(run.run_id), str(run.prompt_id),
                 str(run.provider_id), str(run.brand_id),
                 run.prompt_text, run.prompt_category, run.response_text,
                 run.model, run.provider_name, run.latency_ms,
@@ -235,7 +235,7 @@ class QueryService:
                 run.created_at,
             ]],
             column_names=[
-                "id", "campaign_id", "prompt_id", "provider_id", "brand_id",
+                "id", "run_id", "prompt_id", "provider_id", "brand_id",
                 "prompt_text", "prompt_category", "response_text",
                 "model", "provider_name", "latency_ms",
                 "input_tokens", "output_tokens",
@@ -248,15 +248,15 @@ class QueryService:
 
     def get_prompt_runs(
         self,
-        campaign_id: UUID | None = None,
+        run_id: UUID | None = None,
         brand_id: UUID | None = None,
         limit: int = 100,
     ) -> list[PromptRun]:
         conditions = []
         params = {}
-        if campaign_id:
-            conditions.append("campaign_id = {campaign_id:UUID}")
-            params["campaign_id"] = str(campaign_id)
+        if run_id:
+            conditions.append("run_id = {run_id:UUID}")
+            params["run_id"] = str(run_id)
         if brand_id:
             conditions.append("brand_id = {brand_id:UUID}")
             params["brand_id"] = str(brand_id)

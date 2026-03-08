@@ -101,7 +101,7 @@ def analytics(query_name, brand, days, fmt):
 
     \b
     CONTEXT FOR AGENTS:
-      This is the primary way to read results after running campaigns.
+      This is the primary way to read results after running prompts.
       Start with 'summary' for an overview, then drill into specific queries.
       --brand accepts a name or UUID. --days controls the lookback window.
       Use --format json for structured output you can parse. Use --format csv

@@ -23,7 +23,7 @@ surfaced bootstrap
 # 2. Interactive wizard — API keys, brand, providers, prompts
 surfaced setup
 
-# 3. Run your first campaign
+# 3. Run your first prompts
 surfaced run --brand "YourBrand"
 
 # 4. View results
@@ -40,8 +40,8 @@ surfaced analytics summary --brand "YourBrand" --days 30
 | `surfaced brands {add,list,show,edit,delete}` | Manage brands |
 | `surfaced prompts {add,list,show,edit,delete,import}` | Manage prompts |
 | `surfaced providers {add,list,show,delete}` | Manage AI providers |
-| `surfaced run [--category X] [--provider Y] [--tag Z] [--brand B] [--dry-run]` | Execute campaign |
-| `surfaced campaigns {list,show}` | View campaign history |
+| `surfaced run [--category X] [--provider Y] [--tag Z] [--brand B] [--dry-run]` | Execute prompts against providers |
+| `surfaced runs {list,show}` | View run history |
 | `surfaced analytics <query> --brand <name> [--days 30] [--format table\|json\|csv]` | Run analytics |
 | `surfaced purge` | Delete CLI provider history and memory stores |
 
@@ -83,9 +83,9 @@ surfaced analytics share_of_voice --brand "YourBrand" --days 30
 `surfaced bootstrap` sets up cron entries automatically. To manage manually, tag prompts with `daily`, `weekly`, or `monthly` and use:
 
 ```
-0 6 * * *   cd ~/.surfaced && ./scripts/run-campaign.sh daily
-0 6 * * 1   cd ~/.surfaced && ./scripts/run-campaign.sh weekly
-0 6 1 * *   cd ~/.surfaced && ./scripts/run-campaign.sh monthly
+0 6 * * *   cd ~/.surfaced && ./scripts/surfaced-runner.sh daily
+0 6 * * 1   cd ~/.surfaced && ./scripts/surfaced-runner.sh weekly
+0 6 1 * *   cd ~/.surfaced && ./scripts/surfaced-runner.sh monthly
 ```
 
 ## Environment Variables
@@ -120,7 +120,7 @@ clickhouse/
   seed/        Sample data
 scripts/
   install.sh   Curl installer
-  run-campaign.sh  Cron-friendly campaign runner
+  surfaced-runner.sh  Cron-friendly scheduled runner
 ```
 
 ## License

@@ -1,4 +1,4 @@
-"""Campaign model."""
+"""Run model."""
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ from uuid import UUID, uuid4
 
 
 @dataclass
-class Campaign:
+class Run:
     name: str
     id: UUID = field(default_factory=uuid4)
     status: str = "running"
@@ -21,7 +21,7 @@ class Campaign:
     updated_at: datetime = field(default_factory=datetime.now)
 
     @classmethod
-    def from_dict(cls, d: dict) -> Campaign:
+    def from_dict(cls, d: dict) -> Run:
         finished = d.get("finished_at")
         if finished and isinstance(finished, str):
             finished = datetime.fromisoformat(finished)

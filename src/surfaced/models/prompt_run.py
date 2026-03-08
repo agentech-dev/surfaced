@@ -9,7 +9,7 @@ from uuid import UUID, uuid4
 
 @dataclass
 class PromptRun:
-    campaign_id: UUID
+    run_id: UUID
     prompt_id: UUID
     provider_id: UUID
     brand_id: UUID
@@ -32,7 +32,7 @@ class PromptRun:
     def from_dict(cls, d: dict) -> PromptRun:
         return cls(
             id=UUID(str(d["id"])) if not isinstance(d["id"], UUID) else d["id"],
-            campaign_id=UUID(str(d["campaign_id"])) if not isinstance(d["campaign_id"], UUID) else d["campaign_id"],
+            run_id=UUID(str(d["run_id"])) if not isinstance(d["run_id"], UUID) else d["run_id"],
             prompt_id=UUID(str(d["prompt_id"])) if not isinstance(d["prompt_id"], UUID) else d["prompt_id"],
             provider_id=UUID(str(d["provider_id"])) if not isinstance(d["provider_id"], UUID) else d["provider_id"],
             brand_id=UUID(str(d["brand_id"])) if not isinstance(d["brand_id"], UUID) else d["brand_id"],

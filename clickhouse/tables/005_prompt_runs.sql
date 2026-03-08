@@ -1,7 +1,7 @@
 CREATE TABLE IF NOT EXISTS prompt_runs
 (
     id UUID,
-    campaign_id UUID,
+    run_id UUID,
     prompt_id UUID,
     provider_id UUID,
     brand_id UUID,
@@ -23,8 +23,7 @@ CREATE TABLE IF NOT EXISTS prompt_runs
     error_message String DEFAULT '',
     brand_mentioned UInt8 DEFAULT 0,
     competitors_mentioned Array(String) DEFAULT [],
-    created_at DateTime64(3) DEFAULT now64(3)
+    created_at DateTime DEFAULT now()
 )
 ENGINE = MergeTree
-PARTITION BY toYYYYMM(created_at)
-ORDER BY (created_at, brand_id, provider_id, prompt_id);
+ORDER BY (brand_id, toDate(created_at));

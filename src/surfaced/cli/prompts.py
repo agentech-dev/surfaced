@@ -51,7 +51,7 @@ def prompts():
     """Manage prompts.
 
     \b
-    Prompts are the questions sent to AI providers during campaigns.
+    Prompts are the questions sent to AI providers during runs.
     Each prompt belongs to a brand and has a category and optional tags.
 
     \b

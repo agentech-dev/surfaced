@@ -11,7 +11,7 @@ from surfaced.cli.brands import brands
 from surfaced.cli.prompts import prompts
 from surfaced.cli.providers import providers
 from surfaced.cli.run import run
-from surfaced.cli.campaigns import campaigns
+from surfaced.cli.runs import runs
 from surfaced.cli.analytics import analytics
 from surfaced.cli.purge import purge
 
@@ -64,7 +64,7 @@ def cli():
     CONTEXT FOR AGENTS:
       This is the top-level command group. If you are setting up from scratch,
       run 'surfaced bootstrap' then 'surfaced setup'. If already configured,
-      use 'surfaced run --brand <name>' to execute campaigns and
+      use 'surfaced run --brand <name>' to execute runs and
       'surfaced analytics summary --brand <name>' to view results.
       Use --format json on any subcommand for machine-readable output.
       API keys are loaded automatically from ~/.surfaced/.env.
@@ -79,6 +79,6 @@ cli.add_command(brands)
 cli.add_command(prompts)
 cli.add_command(providers)
 cli.add_command(run)
-cli.add_command(campaigns)
+cli.add_command(runs)
 cli.add_command(analytics)
 cli.add_command(purge)

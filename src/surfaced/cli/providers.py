@@ -90,13 +90,13 @@ def providers():
 
     \b
     CONTEXT FOR AGENTS:
-      Providers define which AI models to query during campaigns. API providers
+      Providers define which AI models to query during runs. API providers
       need the corresponding API key in ~/.surfaced/.env. CLI providers need
       the binary installed (e.g. 'claude', 'codex', 'gemini').
-      You need at least one provider before running campaigns.
+      You need at least one provider before running prompts.
       Use 'surfaced providers add --type <type>' — defaults are filled in
       automatically. Only --type is required. Use 'surfaced providers list' to
-      verify what is configured. After adding providers, run campaigns with
+      verify what is configured. After adding providers, run prompts with
       'surfaced run --brand <name>'.
     """
     pass

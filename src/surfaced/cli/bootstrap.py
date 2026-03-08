@@ -68,7 +68,7 @@ def bootstrap(skip_cron, skip_cli_tools, host, port):
       4. Run schema migrations (CREATE TABLE statements)
       5. Copy .env.example → .env if missing
       6. Install Node.js if needed, then claude/codex/gemini CLI tools
-      7. Set up cron for scheduled campaigns
+      7. Set up cron for scheduled runs
 
     \b
     CONTEXT FOR AGENTS:
@@ -76,7 +76,7 @@ def bootstrap(skip_cron, skip_cli_tools, host, port):
       no input. After bootstrap completes, run 'surfaced setup' to
       configure API keys, brands, providers, and prompts interactively.
       Use --skip-cli-tools if you only want API providers (no Node.js needed).
-      Use --skip-cron if you don't want scheduled campaigns.
+      Use --skip-cron if you don't want scheduled runs.
     """
     project_dir = _find_project_dir()
 
@@ -215,12 +215,11 @@ def bootstrap(skip_cron, skip_cli_tools, host, port):
         if cron_marker in existing_crontab:
             click.echo("  - Cron entries already exist")
         else:
-            campaign_script = os.path.join(project_dir, "scripts", "run-campaign.sh")
             new_entries = f"""
 {cron_marker}
-0 6 * * *   cd {project_dir} && ./scripts/run-campaign.sh daily   {cron_marker}
-0 6 * * 1   cd {project_dir} && ./scripts/run-campaign.sh weekly  {cron_marker}
-0 6 1 * *   cd {project_dir} && ./scripts/run-campaign.sh monthly {cron_marker}
+0 6 * * *   cd {project_dir} && ./scripts/surfaced-runner.sh daily   {cron_marker}
+0 6 * * 1   cd {project_dir} && ./scripts/surfaced-runner.sh weekly  {cron_marker}
+0 6 1 * *   cd {project_dir} && ./scripts/surfaced-runner.sh monthly {cron_marker}
 """
             full_crontab = existing_crontab.rstrip() + "\n" + new_entries
             cron_result = subprocess.run(

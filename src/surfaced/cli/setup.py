@@ -344,7 +344,7 @@ def setup(step):
         - surfaced brands add --name "X" --aliases "A,B" --competitors "C,D"
         - surfaced providers add --type anthropic_api
         - surfaced prompts import prompts_import.json
-      After setup, run 'surfaced run --brand <name>' to execute a campaign.
+      After setup, run 'surfaced run --brand <name>' to execute prompts.
     """
     click.echo("════════════════════════════════════════════════════")
     click.echo(" Surfaced Setup Wizard")
@@ -375,7 +375,7 @@ def setup(step):
     click.echo(" Setup complete!")
     click.echo("════════════════════════════════════════════════════")
     click.echo("")
-    click.echo(" Run your first campaign:")
+    click.echo(" Run your first prompts:")
     click.echo("   surfaced run --brand <YourBrand>")
     click.echo("")
     click.echo(" View results:")
