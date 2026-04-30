@@ -53,7 +53,7 @@ def init(host, port):
 
     \b
     Runs all table and materialized view SQL files in order.
-    Requires a running ClickHouse server (clickhousectl run server).
+    Requires a running ClickHouse server (clickhousectl local server start).
     Safe to run multiple times — uses CREATE TABLE IF NOT EXISTS.
 
     \b

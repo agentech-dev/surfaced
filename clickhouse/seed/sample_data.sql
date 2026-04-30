@@ -1,5 +1,5 @@
 -- Sample data for quick start
--- Run with: clickhousectl run client -- --queries-file clickhouse/seed/sample_data.sql
+-- Run with: clickhousectl local client --queries-file clickhouse/seed/sample_data.sql
 
 -- Sample brand
 INSERT INTO brands (id, name, domain, description, aliases, competitors)

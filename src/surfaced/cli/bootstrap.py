@@ -93,12 +93,12 @@ def bootstrap(skip_cron, skip_cli_tools, host, port):
 
     # ---------- 2. Install ClickHouse via clickhousectl ----------
     click.echo("==> Checking ClickHouse...")
-    result = _run("clickhousectl which", check=False, capture=True)
+    result = _run("clickhousectl local which", check=False, capture=True)
     if result.returncode == 0 and result.stdout.strip():
         click.echo(f"  - ClickHouse already installed ({result.stdout.strip()})")
     else:
         click.echo("  Installing ClickHouse stable...")
-        _run("clickhousectl use stable")
+        _run("clickhousectl local use stable")
         click.echo("  ✓ ClickHouse installed")
 
     # ---------- 3. Start ClickHouse if not running ----------
@@ -108,7 +108,7 @@ def bootstrap(skip_cron, skip_cli_tools, host, port):
     else:
         click.echo("  Starting ClickHouse...")
         subprocess.Popen(
-            ["clickhousectl", "run", "server"],
+            ["clickhousectl", "local", "server", "start"],
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
         )
