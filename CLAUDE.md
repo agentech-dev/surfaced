@@ -4,13 +4,13 @@
 
 ```bash
 # 1. Start ClickHouse
-chv run server
+clickhousectl run server
 
 # 2. Initialize schema
 surfaced init
 
 # 3. (Optional) Load sample data
-chv run client -- --queries-file clickhouse/seed/sample_data.sql
+clickhousectl run client -- --queries-file clickhouse/seed/sample_data.sql
 
 # 4. Add a brand
 surfaced brands add --name "YourBrand" --domain yourbrand.com \

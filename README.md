@@ -9,7 +9,7 @@ Surfaced tracks whether and how brands are mentioned when users ask AI assistant
 ## Install
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/sdairs/surfaced/main/scripts/install.sh | sh
+curl -sSL https://raw.githubusercontent.com/agentech-dev/surfaced/main/scripts/install.sh | sh
 ```
 
 This installs `surfaced` as a globally available command. You never need to think about uv, venvs, or directories.
@@ -99,7 +99,7 @@ surfaced analytics share_of_voice --brand "YourBrand" --days 30
 ## Development
 
 ```bash
-git clone https://github.com/sdairs/surfaced.git
+git clone https://github.com/agentech-dev/surfaced.git
 cd surfaced
 uv sync
 uv run pytest tests/ -v

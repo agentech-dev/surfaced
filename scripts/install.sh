@@ -1,30 +1,53 @@
 #!/usr/bin/env sh
 # Surfaced installer
-# Usage: curl -sSL https://raw.githubusercontent.com/sdairs/surfaced/main/scripts/install.sh | sh
+# Usage: curl -sSL https://raw.githubusercontent.com/agentech-dev/surfaced/main/scripts/install.sh | sh
 #
 # Installs `surfaced` as a globally available command.
 # Run `surfaced bootstrap` afterwards to set up infrastructure.
 
 set -eu
 
-REPO_URL="https://github.com/sdairs/surfaced.git"
+REPO_URL="https://github.com/agentech-dev/surfaced.git"
 INSTALL_DIR="$HOME/.surfaced"
 
 info()  { printf "==> %s\n" "$*"; }
 ok()    { printf "  ✓ %s\n" "$*"; }
+skip()  { printf "  • %s\n" "$*"; }
 err()   { printf "  ✗ %s\n" "$*" >&2; }
 
-# ---------- 1. Install uv if missing ----------
-if command -v uv >/dev/null 2>&1; then
-    ok "uv already installed"
+# ---------- 1. Check dependencies ----------
+info "Checking dependencies..."
+
+if command -v git >/dev/null 2>&1; then
+    ok "git found ($(git --version 2>/dev/null | head -n1))"
 else
+    err "git is required but not installed"
+    echo ""
+    echo "Please install git, then re-run this installer:"
+    echo "  macOS:   xcode-select --install   (or: brew install git)"
+    echo "  Debian:  sudo apt-get install git"
+    echo "  Fedora:  sudo dnf install git"
+    echo ""
+    exit 1
+fi
+
+if command -v uv >/dev/null 2>&1; then
+    ok "uv found ($(uv --version 2>/dev/null | head -n1))"
+    NEED_UV=0
+else
+    skip "uv not found — will install"
+    NEED_UV=1
+fi
+
+# ---------- 2. Install uv if needed ----------
+if [ "$NEED_UV" = "1" ]; then
     info "Installing uv..."
     curl -LsSf https://astral.sh/uv/install.sh | sh
     export PATH="$HOME/.local/bin:$PATH"
     ok "uv installed"
 fi
 
-# ---------- 2. Clone repo to ~/.surfaced ----------
+# ---------- 3. Clone repo to ~/.surfaced ----------
 if [ -d "$INSTALL_DIR/.git" ]; then
     info "Updating existing installation..."
     git -C "$INSTALL_DIR" pull --quiet
@@ -39,7 +62,7 @@ else
     ok "Cloned to ~/.surfaced"
 fi
 
-# ---------- 3. Install as global tool ----------
+# ---------- 4. Install as global tool ----------
 info "Installing surfaced CLI..."
 uv tool install --from "$INSTALL_DIR" surfaced --force --quiet
 ok "surfaced installed"

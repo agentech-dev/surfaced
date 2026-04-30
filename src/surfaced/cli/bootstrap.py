@@ -56,14 +56,14 @@ def bootstrap(skip_cron, skip_cli_tools, host, port):
     """Set up all infrastructure for surfaced.
 
     \b
-    Installs chv, ClickHouse, starts the server, initializes the schema,
+    Installs clickhousectl, ClickHouse, starts the server, initializes the schema,
     creates .env, and optionally installs CLI tools and cron entries.
     Idempotent — safe to run multiple times.
 
     \b
     What it does (in order):
-      1. Install chv (ClickHouse version manager)
-      2. Install ClickHouse binary via chv
+      1. Install clickhousectl (ClickHouse version manager)
+      2. Install ClickHouse binary via clickhousectl
       3. Start ClickHouse server if not running
       4. Run schema migrations (CREATE TABLE statements)
       5. Copy .env.example → .env if missing
@@ -80,25 +80,25 @@ def bootstrap(skip_cron, skip_cli_tools, host, port):
     """
     project_dir = _find_project_dir()
 
-    # ---------- 1. Install chv ----------
-    click.echo("==> Checking chv...")
-    if _cmd_exists("chv"):
-        click.echo("  - chv already installed")
+    # ---------- 1. Install clickhousectl ----------
+    click.echo("==> Checking clickhousectl...")
+    if _cmd_exists("clickhousectl"):
+        click.echo("  - clickhousectl already installed")
     else:
-        click.echo("  Installing chv...")
-        _run("curl -sSL https://raw.githubusercontent.com/sdairs/chv/main/install.sh | bash")
-        # Ensure PATH includes chv
+        click.echo("  Installing clickhousectl...")
+        _run("curl -sSL https://clickhouse.com/cli | sh")
+        # Ensure PATH includes clickhousectl
         os.environ["PATH"] = os.path.join(os.path.expanduser("~"), ".local", "bin") + ":" + os.environ.get("PATH", "")
-        click.echo("  ✓ chv installed")
+        click.echo("  ✓ clickhousectl installed")
 
-    # ---------- 2. Install ClickHouse via chv ----------
+    # ---------- 2. Install ClickHouse via clickhousectl ----------
     click.echo("==> Checking ClickHouse...")
-    result = _run("chv which", check=False, capture=True)
+    result = _run("clickhousectl which", check=False, capture=True)
     if result.returncode == 0 and result.stdout.strip():
         click.echo(f"  - ClickHouse already installed ({result.stdout.strip()})")
     else:
         click.echo("  Installing ClickHouse stable...")
-        _run("chv use stable")
+        _run("clickhousectl use stable")
         click.echo("  ✓ ClickHouse installed")
 
     # ---------- 3. Start ClickHouse if not running ----------
@@ -108,7 +108,7 @@ def bootstrap(skip_cron, skip_cli_tools, host, port):
     else:
         click.echo("  Starting ClickHouse...")
         subprocess.Popen(
-            ["chv", "run", "server"],
+            ["clickhousectl", "run", "server"],
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
         )
