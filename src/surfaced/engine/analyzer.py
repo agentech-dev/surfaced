@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import re
 from collections.abc import Callable
 from dataclasses import dataclass
 from time import perf_counter
@@ -118,7 +119,7 @@ def judge_recommendation(
             attempted=True,
         )
 
-    status = raw_status.strip().casefold()
+    status = _parse_recommendation_status(raw_status)
     if status in JUDGED_RECOMMENDATION_STATUSES:
         return RecommendationJudgmentResult(
             status=status,
@@ -131,7 +132,7 @@ def judge_recommendation(
         status=RECOMMENDATION_STATUS_JUDGE_FAILED,
         judge_model=judge_model,
         raw_output=raw_status,
-        error_message="Judge returned an invalid recommendation label",
+        error_message="Could not parse a leading recommendation label",
         latency_ms=int((perf_counter() - start) * 1000),
         attempted=True,
     )
@@ -154,11 +155,12 @@ def _call_recommendation_judge(response_text: str, brand: Brand) -> str:
     client = anthropic.Anthropic(api_key=api_key)
     response = client.messages.create(
         model=get_recommendation_judge_model(),
-        max_tokens=8,
+        max_tokens=4,
         temperature=0,
         system=(
             "Classify whether the answer recommends the tracked brand. "
-            "Reply with exactly one label: recommended, neutral, negative."
+            "Reply with one lowercase word only: recommended, neutral, or negative. "
+            "Do not include Markdown or explanation."
         ),
         messages=[{
             "role": "user",
@@ -176,3 +178,13 @@ def _call_recommendation_judge(response_text: str, brand: Brand) -> str:
         if block.type == "text":
             text += block.text
     return text
+
+
+def _parse_recommendation_status(raw_output: str) -> str:
+    """Parse a leading judge label, tolerating Markdown and extra text."""
+    match = re.match(
+        r"^[\s*_`#>-]*(recommended|neutral|negative)\b",
+        raw_output.strip(),
+        flags=re.IGNORECASE,
+    )
+    return match.group(1).casefold() if match else ""

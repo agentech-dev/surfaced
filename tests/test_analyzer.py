@@ -145,6 +145,34 @@ def test_recommendation_result_stores_raw_output():
     assert result.attempted is True
 
 
+def test_recommendation_parses_markdown_label_with_explanation():
+    brand = _make_brand()
+
+    result = judge_recommendation(
+        "Acme is a strong fit.",
+        brand,
+        judge=lambda response, brand: "**recommended**  The answer recommends it.",
+    )
+
+    assert result.status == "recommended"
+    assert result.raw_output == "**recommended**  The answer recommends it."
+    assert result.error_message == ""
+
+
+def test_recommendation_parses_plain_label_with_explanation():
+    brand = _make_brand()
+
+    result = judge_recommendation(
+        "Acme is one of several tools.",
+        brand,
+        judge=lambda response, brand: "neutral  The answer only mentions it.",
+    )
+
+    assert result.status == "neutral"
+    assert result.raw_output == "neutral  The answer only mentions it."
+    assert result.error_message == ""
+
+
 def test_recommendation_neutral():
     brand = _make_brand()
 
@@ -192,7 +220,7 @@ def test_recommendation_invalid_result_stores_raw_output_and_error():
 
     assert result.status == "judge_failed"
     assert result.raw_output == "probably"
-    assert "invalid recommendation label" in result.error_message
+    assert "Could not parse" in result.error_message
     assert result.attempted is True
 
 
