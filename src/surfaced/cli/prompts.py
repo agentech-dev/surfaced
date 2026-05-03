@@ -14,6 +14,32 @@ def _qs():
     return QueryService()
 
 
+def _resolve_brand_id(qs: QueryService, brand: str, active_only: bool = True) -> UUID:
+    """Resolve a brand UUID, name, or alias to a brand ID."""
+    try:
+        return UUID(brand)
+    except ValueError:
+        pass
+
+    brand_obj = qs.get_brand_by_name(brand)
+    if brand_obj and (brand_obj.is_active or not active_only):
+        return brand_obj.id
+
+    brand_lookup = brand.casefold()
+    matches = [
+        b for b in qs.get_brands(active_only=active_only)
+        if b.name.casefold() == brand_lookup
+        or any(alias.casefold() == brand_lookup for alias in b.aliases)
+    ]
+    if len(matches) == 1:
+        return matches[0].id
+    if len(matches) > 1:
+        click.echo(f"Brand '{brand}' is ambiguous; use a UUID instead.", err=True)
+    else:
+        click.echo(f"Brand '{brand}' not found.", err=True)
+    raise SystemExit(1)
+
+
 def _resolve_branded(qs: QueryService, text: str, brand_id: UUID, override: bool | None) -> bool:
     """Use an explicit branded value or infer it from the brand name/aliases."""
     if override is not None:
@@ -66,14 +92,15 @@ def prompts():
 
     \b
     Examples:
-      surfaced prompts add --text "Best tools for X?" --category data_warehouse --brand <id> --tags daily
-      surfaced prompts add --text "How does Acme compare to Globex?" --category competitor_research --brand <id> --branded
-      surfaced prompts list --brand <id> --category data_warehouse
+      surfaced prompts add --text "Best tools for X?" --category data_warehouse --brand Acme --tags daily
+      surfaced prompts add --text "How does Acme compare to Globex?" --category competitor_research --brand Acme --branded
+      surfaced prompts list --brand Acme --category data_warehouse
       surfaced prompts import prompts.json
 
     \b
     CONTEXT FOR AGENTS:
-      You need at least one brand before adding prompts (use its UUID as --brand).
+      You need at least one brand before adding prompts. --brand accepts the
+      brand UUID, name, or alias.
       For bulk setup, use 'surfaced prompts import' with a JSON file. The JSON
       format is: [{"text": "...", "category": "data_warehouse", "brand_id": "<uuid>", "tags": ["daily"]}].
       The optional "branded" field overrides auto-detection from the prompt
@@ -87,7 +114,7 @@ def prompts():
 @prompts.command()
 @click.option("--text", required=True, help="Prompt text")
 @click.option("--category", required=True, help="User-defined analytics category")
-@click.option("--brand", required=True, help="Brand ID")
+@click.option("--brand", required=True, help="Brand ID, name, or alias")
 @click.option("--tags", default="", help="Comma-separated tags")
 @click.option("--branded/--unbranded", default=None, help="Override brand-name auto-detection")
 @click.option("--template", is_flag=True, help="Mark as template")
@@ -95,7 +122,7 @@ def prompts():
 def add(text, category, brand, tags, branded, template, fmt):
     """Add a new prompt."""
     qs = _qs()
-    brand_id = UUID(brand)
+    brand_id = _resolve_brand_id(qs, brand)
     variables = Prompt.extract_variables(text) if template else []
     prompt = Prompt(
         text=text,
@@ -113,13 +140,14 @@ def add(text, category, brand, tags, branded, template, fmt):
 @prompts.command("list")
 @click.option("--category", default=None, help="Filter by user-defined category")
 @click.option("--tag", default=None, help="Filter by tag")
-@click.option("--brand", default=None, help="Filter by brand ID")
+@click.option("--brand", default=None, help="Filter by brand ID, name, or alias")
 @click.option("--active/--inactive", default=True)
 @click.option("--format", "fmt", default="text", type=click.Choice(["text", "json"]))
 def list_prompts(category, tag, brand, active, fmt):
     """List prompts."""
-    brand_id = UUID(brand) if brand else None
-    prompt_list = _qs().get_prompts(
+    qs = _qs()
+    brand_id = _resolve_brand_id(qs, brand, active_only=active) if brand else None
+    prompt_list = qs.get_prompts(
         active_only=active, category=category, tag=tag, brand_id=brand_id,
     )
     if fmt == "json":
