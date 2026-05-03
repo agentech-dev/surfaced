@@ -3,6 +3,7 @@
 SELECT
     prompt_id,
     any(prompt_text) AS prompt_text_sample,
+    any(prompt_branded) AS prompt_branded,
     count() AS runs,
     sum(brand_mentioned) AS mentions,
     round(sum(brand_mentioned) / count() * 100, 1) AS mention_rate_pct,

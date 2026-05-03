@@ -6,13 +6,8 @@ CREATE TABLE IF NOT EXISTS answers
     provider_id UUID,
     brand_id UUID,
     prompt_text String,
-    prompt_category Enum8(
-        'brand_query' = 1,
-        'competitor_comparison' = 2,
-        'industry_query' = 3,
-        'feature_query' = 4,
-        'problem_solving' = 5
-    ),
+    prompt_category LowCardinality(String),
+    prompt_branded Bool DEFAULT false,
     response_text String,
     model String,
     provider_name String,

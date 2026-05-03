@@ -4,7 +4,7 @@ Open-source AI visibility tracking — monitor how brands appear in AI-generated
 
 ## What it does
 
-Surfaced tracks whether and how brands are mentioned when users ask AI assistants questions. It runs prompts against multiple AI providers on a schedule, stores results in ClickHouse, and provides analytics on brand visibility over time.
+Surfaced tracks whether and how brands are mentioned when users ask AI assistants questions. It runs prompts against multiple AI providers on a schedule, stores results in ClickHouse, and provides analytics on brand visibility over time. Prompts use your own category labels for use cases, and the `branded` dimension splits discovery prompts from prompts that already name your brand.
 
 ## Install
 
@@ -40,7 +40,7 @@ surfaced analytics summary --brand "YourBrand" --days 30
 | `surfaced brands {add,list,show,edit,delete}` | Manage brands |
 | `surfaced prompts {add,list,show,edit,delete,import}` | Manage prompts |
 | `surfaced providers {add,list,show,delete}` | Manage AI providers |
-| `surfaced run [--category X] [--provider Y] [--tag Z] [--brand B] [--dry-run]` | Execute prompts against providers |
+| `surfaced run [--category X] [--provider Y] [--tag Z] [--brand B] [--dry-run]` | Execute prompts against providers; category is a user-defined use-case grouping |
 | `surfaced runs {list,show}` | View run history |
 | `surfaced analytics <query> --brand <name> [--days 30] [--format table\|json\|csv]` | Run analytics |
 | `surfaced purge` | Delete CLI provider history and memory stores |
@@ -67,9 +67,9 @@ The curl installer installs CLI tools for you: Claude Code via its native instal
 Built-in queries available via `surfaced analytics <query>`:
 
 - **summary** — overall dashboard metrics
-- **mention_frequency** — mention rate over time by day
-- **share_of_voice** — brand vs competitor mention share by category
-- **provider_comparison** — visibility comparison across AI providers
+- **mention_frequency** — mention rate over time by day and branded/unbranded prompt split
+- **share_of_voice** — brand vs competitor mention share by category and branded/unbranded prompt split
+- **provider_comparison** — visibility comparison across AI providers and branded/unbranded prompt split
 - **consistency** — response stability for specific prompts
 
 ```bash
