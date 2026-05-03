@@ -56,6 +56,7 @@ def _format_prompt(prompt: Prompt, fmt: str) -> str:
             "text": prompt.text,
             "category": prompt.category,
             "branded": prompt.branded,
+            "recommendation_enabled": prompt.recommendation_enabled,
             "brand_id": str(prompt.brand_id),
             "tags": prompt.tags,
             "is_template": prompt.is_template,
@@ -69,6 +70,7 @@ def _format_prompt(prompt: Prompt, fmt: str) -> str:
         f"Text:      {prompt.text}",
         f"Category:  {prompt.category}",
         f"Branded:   {'yes' if prompt.branded else 'no'}",
+        f"Recs:      {'enabled' if prompt.recommendation_enabled else 'disabled'}",
         f"Brand ID:  {prompt.brand_id}",
         f"Tags:      {', '.join(prompt.tags) if prompt.tags else '-'}",
         f"Template:  {'yes' if prompt.is_template else 'no'}",
@@ -106,6 +108,8 @@ def prompts():
       format is: [{"text": "...", "category": "data_warehouse", "brand_id": "<uuid>", "tags": ["daily"]}].
       The optional "branded" field overrides auto-detection from the prompt
       text and brand name/aliases.
+      The optional "recommendation_enabled" field controls recommendation judging
+      for that prompt and defaults to true.
       Tags like 'daily', 'weekly', 'monthly' control which prompts run on cron schedules.
       After adding prompts, run them with 'surfaced run --brand <name>'.
     """
@@ -118,9 +122,10 @@ def prompts():
 @click.option("--brand", required=True, help="Brand ID, name, or alias")
 @click.option("--tags", default="", help="Comma-separated tags")
 @click.option("--branded/--unbranded", default=None, help="Override brand-name auto-detection")
+@click.option("--recommendations/--no-recommendations", default=True, help="Enable recommendation judging for this prompt")
 @click.option("--template", is_flag=True, help="Mark as template")
 @click.option("--format", "fmt", default="text", type=click.Choice(["text", "json"]))
-def add(text, category, brand, tags, branded, template, fmt):
+def add(text, category, brand, tags, branded, recommendations, template, fmt):
     """Add a new prompt."""
     qs = _qs()
     brand_id = _resolve_brand_id(qs, brand)
@@ -130,6 +135,7 @@ def add(text, category, brand, tags, branded, template, fmt):
         category=category,
         brand_id=brand_id,
         branded=_resolve_branded(qs, text, brand_id, branded),
+        recommendation_enabled=recommendations,
         tags=[t.strip() for t in tags.split(",") if t.strip()] if tags else [],
         is_template=1 if template else 0,
         variables=variables,
@@ -162,6 +168,7 @@ def list_prompts(category, tag, brand, active, fmt):
             "id": p.id,
             "category": p.category,
             "branded": "yes" if p.branded else "no",
+            "recommendations": "yes" if p.recommendation_enabled else "no",
             "text": p.text,
             "tags": ", ".join(p.tags) if p.tags else "-",
         }
@@ -187,8 +194,9 @@ def show(prompt_id, fmt):
 @click.option("--category", default=None, help="User-defined analytics category")
 @click.option("--tags", default=None, help="Comma-separated tags (replaces existing)")
 @click.option("--branded/--unbranded", default=None, help="Set branded metadata")
+@click.option("--recommendations/--no-recommendations", default=None, help="Set recommendation judging metadata")
 @click.option("--format", "fmt", default="text", type=click.Choice(["text", "json"]))
-def edit(prompt_id, text, category, tags, branded, fmt):
+def edit(prompt_id, text, category, tags, branded, recommendations, fmt):
     """Edit a prompt."""
     qs = _qs()
     prompt = qs.get_prompt(UUID(prompt_id))
@@ -205,6 +213,8 @@ def edit(prompt_id, text, category, tags, branded, fmt):
         prompt.tags = [t.strip() for t in tags.split(",") if t.strip()]
     if branded is not None:
         prompt.branded = branded
+    if recommendations is not None:
+        prompt.recommendation_enabled = recommendations
     qs.update_prompt(prompt)
     click.echo(_format_prompt(prompt, fmt))
 
@@ -226,6 +236,7 @@ def import_prompts(filepath, fmt):
     \b
     JSON format: [{"text": "...", "category": "data_warehouse", "brand_id": "<uuid>", "tags": ["daily"]}]
     Optional "branded": true/false overrides auto-detection.
+    Optional "recommendation_enabled": true/false controls recommendation judging.
 
     \b
     CONTEXT FOR AGENTS:
@@ -246,6 +257,7 @@ def import_prompts(filepath, fmt):
             category=item["category"],
             brand_id=brand_id,
             branded=_resolve_branded(qs, item["text"], brand_id, item.get("branded")),
+            recommendation_enabled=item.get("recommendation_enabled", True),
             tags=item.get("tags", []),
             is_template=1 if item.get("is_template") else 0,
             variables=variables,

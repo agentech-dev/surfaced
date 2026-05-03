@@ -10,6 +10,7 @@ from surfaced.models.brand import Brand
 from surfaced.models.prompt import Prompt
 from surfaced.models.answer import Answer
 from surfaced.models.provider import Provider
+from surfaced.models.recommendation_judgment import RecommendationJudgment
 from surfaced.models.run import Run
 
 
@@ -124,12 +125,14 @@ class QueryService:
             "prompts",
             [[
                 str(prompt.id), prompt.text, prompt.category,
-                prompt.branded, prompt.tags, str(prompt.brand_id),
+                prompt.branded, prompt.recommendation_enabled,
+                prompt.tags, str(prompt.brand_id),
                 prompt.is_template, prompt.variables, prompt.is_active,
                 prompt.created_at, prompt.updated_at,
             ]],
             column_names=[
-                "id", "text", "category", "branded", "tags", "brand_id",
+                "id", "text", "category", "branded",
+                "recommendation_enabled", "tags", "brand_id",
                 "is_template", "variables", "is_active",
                 "created_at", "updated_at",
             ],
@@ -232,7 +235,8 @@ class QueryService:
                 answer.latency_ms,
                 answer.input_tokens, answer.output_tokens,
                 answer.status, answer.error_message,
-                answer.brand_mentioned, answer.competitors_mentioned,
+                answer.brand_mentioned, answer.recommendation_status,
+                answer.competitors_mentioned,
                 answer.created_at,
             ]],
             column_names=[
@@ -241,7 +245,7 @@ class QueryService:
                 "model", "provider_name", "latency_ms",
                 "input_tokens", "output_tokens",
                 "status", "error_message",
-                "brand_mentioned", "competitors_mentioned",
+                "brand_mentioned", "recommendation_status", "competitors_mentioned",
                 "created_at",
             ],
         )
@@ -268,3 +272,26 @@ class QueryService:
         query += f" ORDER BY created_at DESC LIMIT {limit}"
         rows = self.db.execute(query, parameters=params if params else None)
         return [Answer.from_dict(r) for r in rows]
+
+    # --- Recommendation judgments ---
+
+    def insert_recommendation_judgment(
+        self, judgment: RecommendationJudgment
+    ) -> RecommendationJudgment:
+        self.db.insert_rows(
+            "recommendation_judgments",
+            [[
+                str(judgment.id), str(judgment.answer_id), str(judgment.run_id),
+                str(judgment.prompt_id), str(judgment.provider_id),
+                str(judgment.brand_id), judgment.judge_model,
+                judgment.recommendation_status, judgment.raw_output,
+                judgment.error_message, judgment.latency_ms,
+                judgment.created_at,
+            ]],
+            column_names=[
+                "id", "answer_id", "run_id", "prompt_id", "provider_id",
+                "brand_id", "judge_model", "recommendation_status",
+                "raw_output", "error_message", "latency_ms", "created_at",
+            ],
+        )
+        return judgment

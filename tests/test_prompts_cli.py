@@ -5,6 +5,7 @@ from uuid import uuid4
 import pytest
 from click.testing import CliRunner
 
+from surfaced.cli.main import cli
 from surfaced.cli.prompts import _resolve_brand_id, prompts
 from surfaced.models.brand import Brand
 
@@ -27,6 +28,14 @@ def test_prompts_add_help_uses_free_form_category():
     assert result.exit_code == 0
     assert "--category TEXT" in result.output
     assert "brand_query" not in result.output
+
+
+def test_providers_add_help_omits_available_combinations():
+    result = CliRunner().invoke(cli, ["providers", "add", "--help"])
+
+    assert result.exit_code == 0
+    assert "Available combinations" not in result.output
+    assert "model=claude-sonnet-4-6" not in result.output
 
 
 def test_resolve_brand_id_accepts_uuid():

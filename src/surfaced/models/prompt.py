@@ -15,6 +15,7 @@ class Prompt:
     brand_id: UUID
     id: UUID = field(default_factory=uuid4)
     branded: bool = False
+    recommendation_enabled: bool = True
     tags: list[str] = field(default_factory=list)
     is_template: int = 0
     variables: list[str] = field(default_factory=list)
@@ -44,6 +45,7 @@ class Prompt:
             category=d["category"],
             brand_id=UUID(str(d["brand_id"])) if not isinstance(d["brand_id"], UUID) else d["brand_id"],
             branded=bool(d.get("branded", False)),
+            recommendation_enabled=bool(d.get("recommendation_enabled", True)),
             tags=list(d.get("tags", [])),
             is_template=d.get("is_template", 0),
             variables=list(d.get("variables", [])),
