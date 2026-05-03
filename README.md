@@ -60,7 +60,7 @@ Surfaced supports 6 provider types across API and CLI modes:
 | `codex_cli` | cli | OpenAI Codex CLI subprocess |
 | `gemini_cli` | cli | Google Gemini CLI subprocess |
 
-`surfaced setup` auto-detects your API keys and installed CLI tools and creates providers for you.
+`surfaced bootstrap` can install the CLI tools for you: Claude Code via its native installer, and Codex/Gemini via Bun. It does not install or require Node.js. `surfaced setup` auto-detects your API keys and installed CLI tools and creates providers for you.
 
 ## Analytics
 
