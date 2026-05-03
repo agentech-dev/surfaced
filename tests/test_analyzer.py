@@ -8,6 +8,7 @@ from surfaced.engine.analyzer import (
     find_competitors_mentioned,
     is_recommendation_judge_enabled,
     is_prompt_branded,
+    judge_recommendation,
 )
 from surfaced.models.brand import Brand
 
@@ -103,6 +104,20 @@ def test_recommendation_not_judged_when_disabled():
     assert result == "not_judged"
 
 
+def test_recommendation_not_judged_is_not_an_attempt():
+    brand = _make_brand()
+
+    result = judge_recommendation(
+        "Acme is a strong fit.",
+        brand,
+        enabled=False,
+        judge=lambda response, brand: "recommended",
+    )
+
+    assert result.status == "not_judged"
+    assert result.attempted is False
+
+
 def test_recommendation_recommended():
     brand = _make_brand()
 
@@ -113,6 +128,21 @@ def test_recommendation_recommended():
     )
 
     assert result == "recommended"
+
+
+def test_recommendation_result_stores_raw_output():
+    brand = _make_brand()
+
+    result = judge_recommendation(
+        "Acme is a strong fit.",
+        brand,
+        judge=lambda response, brand: "recommended",
+    )
+
+    assert result.status == "recommended"
+    assert result.raw_output == "recommended"
+    assert result.error_message == ""
+    assert result.attempted is True
 
 
 def test_recommendation_neutral():
@@ -151,6 +181,21 @@ def test_recommendation_invalid_judge_output_fails():
     assert result == "judge_failed"
 
 
+def test_recommendation_invalid_result_stores_raw_output_and_error():
+    brand = _make_brand()
+
+    result = judge_recommendation(
+        "Acme is a strong fit.",
+        brand,
+        judge=lambda response, brand: "probably",
+    )
+
+    assert result.status == "judge_failed"
+    assert result.raw_output == "probably"
+    assert "invalid recommendation label" in result.error_message
+    assert result.attempted is True
+
+
 def test_recommendation_judge_exception_fails():
     brand = _make_brand()
 
@@ -160,6 +205,20 @@ def test_recommendation_judge_exception_fails():
     result = classify_recommendation("Acme is a strong fit.", brand, judge=judge)
 
     assert result == "judge_failed"
+
+
+def test_recommendation_exception_result_stores_error():
+    brand = _make_brand()
+
+    def judge(response, brand):
+        raise RuntimeError("judge failed")
+
+    result = judge_recommendation("Acme is a strong fit.", brand, judge=judge)
+
+    assert result.status == "judge_failed"
+    assert result.raw_output == ""
+    assert result.error_message == "judge failed"
+    assert result.attempted is True
 
 
 def test_recommendation_global_toggle_defaults_enabled(monkeypatch):

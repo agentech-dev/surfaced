@@ -13,13 +13,14 @@ import click
 from surfaced.db.queries import QueryService
 from surfaced.engine.analyzer import (
     check_brand_mentioned,
-    classify_recommendation,
     find_competitors_mentioned,
     is_recommendation_judge_enabled,
+    judge_recommendation,
 )
 from surfaced.engine.rate_limiter import RateLimiter
 from surfaced.engine.template import render_prompt
 from surfaced.models.answer import Answer
+from surfaced.models.recommendation_judgment import RecommendationJudgment
 from surfaced.models.run import Run
 from surfaced.providers.registry import get_provider
 
@@ -119,10 +120,11 @@ def execute_run(
                         brand_mentioned = 0
                         competitors_mentioned = []
                         recommendation_status = "not_mentioned"
+                        recommendation_judgment = None
                         if brand:
                             brand_mentioned = 1 if check_brand_mentioned(response.text, brand) else 0
                             competitors_mentioned = find_competitors_mentioned(response.text, brand)
-                            recommendation_status = classify_recommendation(
+                            recommendation_judgment = judge_recommendation(
                                 response.text,
                                 brand,
                                 brand_mentioned=bool(brand_mentioned),
@@ -131,6 +133,7 @@ def execute_run(
                                     and prompt.recommendation_enabled
                                 ),
                             )
+                            recommendation_status = recommendation_judgment.status
 
                         answer = Answer(
                             run_id=run_record.id,
@@ -152,6 +155,24 @@ def execute_run(
                             competitors_mentioned=competitors_mentioned,
                         )
                         qs.insert_answer(answer)
+                        if (
+                            recommendation_judgment
+                            and recommendation_judgment.attempted
+                        ):
+                            qs.insert_recommendation_judgment(
+                                RecommendationJudgment(
+                                    answer_id=answer.id,
+                                    run_id=answer.run_id,
+                                    prompt_id=answer.prompt_id,
+                                    provider_id=answer.provider_id,
+                                    brand_id=answer.brand_id,
+                                    judge_model=recommendation_judgment.judge_model,
+                                    recommendation_status=recommendation_judgment.status,
+                                    raw_output=recommendation_judgment.raw_output,
+                                    error_message=recommendation_judgment.error_message,
+                                    latency_ms=recommendation_judgment.latency_ms,
+                                )
+                            )
                         completed += 1
                         click.echo(f"  [{completed}/{total}] {prov_record.name}: {prompt.text[:50]}... ({'mentioned' if brand_mentioned else 'not mentioned'})")
                         break

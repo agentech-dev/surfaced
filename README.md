@@ -68,6 +68,7 @@ Built-in queries available via `surfaced analytics <query>`:
 
 - **summary** — overall dashboard metrics
 - **mention_frequency** — mention rate over time by day and branded/unbranded prompt split
+- **recommendation_judge_failures** — raw judge output and errors for failed recommendation judgments
 - **recommendation_rate** — recommendation rate over time for judged brand mentions
 - **share_of_voice** — brand vs competitor mention share by category and branded/unbranded prompt split
 - **provider_comparison** — visibility comparison across AI providers and branded/unbranded prompt split
@@ -75,6 +76,7 @@ Built-in queries available via `surfaced analytics <query>`:
 
 ```bash
 surfaced analytics mention_frequency --brand "YourBrand" --days 7
+surfaced analytics recommendation_judge_failures --brand "YourBrand" --days 7
 surfaced analytics recommendation_rate --brand "YourBrand" --days 30
 surfaced analytics provider_comparison --brand "YourBrand" --days 30
 surfaced analytics share_of_voice --brand "YourBrand" --days 30

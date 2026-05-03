@@ -7,6 +7,7 @@ from surfaced.models.brand import Brand
 from surfaced.models.prompt import Prompt
 from surfaced.models.answer import Answer
 from surfaced.models.provider import Provider
+from surfaced.models.recommendation_judgment import RecommendationJudgment
 from surfaced.models.run import Run
 from surfaced.cli.prompts import _format_prompt
 
@@ -188,3 +189,27 @@ def test_answer_recommendation_status_defaults_not_mentioned():
     )
 
     assert answer.recommendation_status == "not_mentioned"
+
+
+def test_recommendation_judgment_from_dict():
+    now = datetime.now()
+    data = {
+        "id": uuid4(),
+        "answer_id": uuid4(),
+        "run_id": uuid4(),
+        "prompt_id": uuid4(),
+        "provider_id": uuid4(),
+        "brand_id": uuid4(),
+        "judge_model": "claude-haiku-4-5",
+        "recommendation_status": "judge_failed",
+        "raw_output": "probably",
+        "error_message": "Judge returned an invalid recommendation label",
+        "latency_ms": 123,
+        "created_at": now,
+    }
+
+    judgment = RecommendationJudgment.from_dict(data)
+
+    assert judgment.recommendation_status == "judge_failed"
+    assert judgment.raw_output == "probably"
+    assert judgment.error_message == "Judge returned an invalid recommendation label"

@@ -10,6 +10,7 @@ from surfaced.models.brand import Brand
 from surfaced.models.prompt import Prompt
 from surfaced.models.answer import Answer
 from surfaced.models.provider import Provider
+from surfaced.models.recommendation_judgment import RecommendationJudgment
 from surfaced.models.run import Run
 
 
@@ -271,3 +272,26 @@ class QueryService:
         query += f" ORDER BY created_at DESC LIMIT {limit}"
         rows = self.db.execute(query, parameters=params if params else None)
         return [Answer.from_dict(r) for r in rows]
+
+    # --- Recommendation judgments ---
+
+    def insert_recommendation_judgment(
+        self, judgment: RecommendationJudgment
+    ) -> RecommendationJudgment:
+        self.db.insert_rows(
+            "recommendation_judgments",
+            [[
+                str(judgment.id), str(judgment.answer_id), str(judgment.run_id),
+                str(judgment.prompt_id), str(judgment.provider_id),
+                str(judgment.brand_id), judgment.judge_model,
+                judgment.recommendation_status, judgment.raw_output,
+                judgment.error_message, judgment.latency_ms,
+                judgment.created_at,
+            ]],
+            column_names=[
+                "id", "answer_id", "run_id", "prompt_id", "provider_id",
+                "brand_id", "judge_model", "recommendation_status",
+                "raw_output", "error_message", "latency_ms", "created_at",
+            ],
+        )
+        return judgment
