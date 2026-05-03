@@ -8,6 +8,9 @@ from datetime import datetime
 from uuid import UUID, uuid4
 
 
+NIL_UUID = UUID("00000000-0000-0000-0000-000000000000")
+
+
 @dataclass
 class Prompt:
     text: str
@@ -16,6 +19,8 @@ class Prompt:
     id: UUID = field(default_factory=uuid4)
     branded: bool = False
     recommendation_enabled: bool = True
+    alignment_enabled: bool = False
+    alignment_position_id: UUID | None = None
     tags: list[str] = field(default_factory=list)
     is_template: int = 0
     variables: list[str] = field(default_factory=list)
@@ -46,6 +51,8 @@ class Prompt:
             brand_id=UUID(str(d["brand_id"])) if not isinstance(d["brand_id"], UUID) else d["brand_id"],
             branded=bool(d.get("branded", False)),
             recommendation_enabled=bool(d.get("recommendation_enabled", True)),
+            alignment_enabled=bool(d.get("alignment_enabled", False)),
+            alignment_position_id=_optional_uuid(d.get("alignment_position_id")),
             tags=list(d.get("tags", [])),
             is_template=d.get("is_template", 0),
             variables=list(d.get("variables", [])),
@@ -53,3 +60,9 @@ class Prompt:
             created_at=d["created_at"] if isinstance(d["created_at"], datetime) else datetime.fromisoformat(str(d["created_at"])),
             updated_at=d["updated_at"] if isinstance(d["updated_at"], datetime) else datetime.fromisoformat(str(d["updated_at"])),
         )
+
+
+def _optional_uuid(value) -> UUID | None:
+    if value in (None, "", NIL_UUID, str(NIL_UUID)):
+        return None
+    return UUID(str(value)) if not isinstance(value, UUID) else value

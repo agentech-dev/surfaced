@@ -77,6 +77,8 @@ def analytics(query_name, brand, days, fmt):
     \b
     Available queries:
       summary              Overall dashboard: total runs, mention rate, avg latency
+      alignment_judge_failures  Raw alignment judge output and errors
+      alignment_rate       Alignment rate over time by provider and position
       mention_frequency    Mention rate over time, grouped by day and branded split
       recommendation_judge_failures  Raw judge output and errors for failed judgments
       recommendation_rate  Recommendation rate over time for judged brand mentions
@@ -87,6 +89,8 @@ def analytics(query_name, brand, days, fmt):
     \b
     Examples:
       surfaced analytics summary --brand "Acme" --days 30
+      surfaced analytics alignment_rate --brand "Acme" --days 30
+      surfaced analytics alignment_judge_failures --brand "Acme" --days 7
       surfaced analytics mention_frequency --brand "Acme" --days 7
       surfaced analytics recommendation_judge_failures --brand "Acme" --days 7
       surfaced analytics recommendation_rate --brand "Acme" --days 30

@@ -25,6 +25,16 @@ CREATE TABLE IF NOT EXISTS answers
         'negative' = 5,
         'judge_failed' = 6
     ) DEFAULT 'not_mentioned',
+    alignment_status Enum8(
+        'not_applicable' = 1,
+        'aligned' = 2,
+        'partial' = 3,
+        'misaligned' = 4,
+        'silent' = 5,
+        'judge_failed' = 6
+    ) DEFAULT 'not_applicable',
+    alignment_position_id UUID DEFAULT '00000000-0000-0000-0000-000000000000',
+    alignment_rationale String DEFAULT '',
     competitors_mentioned Array(String) DEFAULT [],
     created_at DateTime DEFAULT now()
 )

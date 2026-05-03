@@ -40,3 +40,14 @@ def test_run_log_row_can_show_configured_judge_model():
 
     assert "claude-haiku-4-5" in row
     assert "JUDGE: Was ClickHouse recommended?" in row
+
+
+def test_run_log_row_can_show_alignment_judge():
+    row = _format_run_log_row([
+        "1",
+        "claude-haiku-4-5",
+        "JUDGE: Is answer aligned to joins?",
+    ])
+
+    assert "claude-haiku-4-5" in row
+    assert "JUDGE: Is answer aligned to joins?" in row

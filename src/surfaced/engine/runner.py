@@ -14,12 +14,15 @@ from surfaced.db.queries import QueryService
 from surfaced.engine.analyzer import (
     check_brand_mentioned,
     find_competitors_mentioned,
+    get_alignment_judge_model,
     get_recommendation_judge_model,
     is_recommendation_judge_enabled,
+    judge_alignment,
     judge_recommendation,
 )
 from surfaced.engine.rate_limiter import RateLimiter
 from surfaced.engine.template import render_prompt
+from surfaced.models.alignment_judgment import AlignmentJudgment
 from surfaced.models.answer import Answer
 from surfaced.models.recommendation_judgment import RecommendationJudgment
 from surfaced.models.run import Run
@@ -111,6 +114,7 @@ def execute_run(
     rate_limiters: dict[UUID, RateLimiter] = {}
     recommendation_judge_enabled = is_recommendation_judge_enabled()
     recommendation_judge_model = get_recommendation_judge_model()
+    alignment_judge_model = get_alignment_judge_model()
 
     try:
         for prov_record in providers:
@@ -139,6 +143,10 @@ def execute_run(
                         competitors_mentioned = []
                         recommendation_status = "not_mentioned"
                         recommendation_judgment = None
+                        alignment_status = "not_applicable"
+                        alignment_position_id = None
+                        alignment_rationale = ""
+                        alignment_judgment = None
                         if brand:
                             brand_mentioned = 1 if check_brand_mentioned(response.text, brand) else 0
                             competitors_mentioned = find_competitors_mentioned(response.text, brand)
@@ -162,6 +170,23 @@ def execute_run(
                                 ),
                             )
                             recommendation_status = recommendation_judgment.status
+                        if prompt.alignment_enabled and prompt.alignment_position_id:
+                            canonical_position = qs.get_canonical_position(
+                                prompt.alignment_position_id,
+                            )
+                            if canonical_position:
+                                _echo_run_log_row(
+                                    next_row,
+                                    alignment_judge_model,
+                                    f"JUDGE: Is answer aligned to {canonical_position.topic}?",
+                                )
+                                alignment_judgment = judge_alignment(
+                                    response.text,
+                                    canonical_position,
+                                )
+                                alignment_status = alignment_judgment.status
+                                alignment_position_id = canonical_position.id
+                                alignment_rationale = alignment_judgment.rationale
 
                         answer = Answer(
                             run_id=run_record.id,
@@ -180,6 +205,9 @@ def execute_run(
                             status="success",
                             brand_mentioned=brand_mentioned,
                             recommendation_status=recommendation_status,
+                            alignment_status=alignment_status,
+                            alignment_position_id=alignment_position_id,
+                            alignment_rationale=alignment_rationale,
                             competitors_mentioned=competitors_mentioned,
                         )
                         qs.insert_answer(answer)
@@ -199,6 +227,27 @@ def execute_run(
                                     raw_output=recommendation_judgment.raw_output,
                                     error_message=recommendation_judgment.error_message,
                                     latency_ms=recommendation_judgment.latency_ms,
+                                )
+                            )
+                        if (
+                            alignment_judgment
+                            and alignment_judgment.attempted
+                            and alignment_position_id
+                        ):
+                            qs.insert_alignment_judgment(
+                                AlignmentJudgment(
+                                    answer_id=answer.id,
+                                    run_id=answer.run_id,
+                                    prompt_id=answer.prompt_id,
+                                    provider_id=answer.provider_id,
+                                    brand_id=answer.brand_id,
+                                    alignment_position_id=alignment_position_id,
+                                    judge_model=alignment_judgment.judge_model,
+                                    alignment_status=alignment_judgment.status,
+                                    rationale=alignment_judgment.rationale,
+                                    raw_output=alignment_judgment.raw_output,
+                                    error_message=alignment_judgment.error_message,
+                                    latency_ms=alignment_judgment.latency_ms,
                                 )
                             )
                         completed += 1

@@ -49,6 +49,38 @@ def _resolve_branded(qs: QueryService, text: str, brand_id: UUID, override: bool
     return is_prompt_branded(text, brand) if brand else False
 
 
+def _resolve_alignment_position(
+    qs: QueryService,
+    brand_id: UUID,
+    alignment_position: str | None,
+) -> UUID | None:
+    """Resolve a canonical position UUID or topic for the prompt's brand."""
+    if not alignment_position:
+        return None
+    try:
+        position_id = UUID(alignment_position)
+        position = qs.get_canonical_position(position_id)
+        if position and position.brand_id == brand_id:
+            return position.id
+    except ValueError:
+        position_lookup = alignment_position.casefold()
+        matches = [
+            p for p in qs.get_canonical_positions(brand_id=brand_id)
+            if p.topic.casefold() == position_lookup
+        ]
+        if len(matches) == 1:
+            return matches[0].id
+        if len(matches) > 1:
+            click.echo(
+                f"Canonical position '{alignment_position}' is ambiguous; use a UUID instead.",
+                err=True,
+            )
+            raise SystemExit(1)
+
+    click.echo(f"Canonical position '{alignment_position}' not found for this brand.", err=True)
+    raise SystemExit(1)
+
+
 def _format_prompt(prompt: Prompt, fmt: str) -> str:
     if fmt == "json":
         return json.dumps({
@@ -57,6 +89,11 @@ def _format_prompt(prompt: Prompt, fmt: str) -> str:
             "category": prompt.category,
             "branded": prompt.branded,
             "recommendation_enabled": prompt.recommendation_enabled,
+            "alignment_enabled": prompt.alignment_enabled,
+            "alignment_position_id": (
+                str(prompt.alignment_position_id)
+                if prompt.alignment_position_id else None
+            ),
             "brand_id": str(prompt.brand_id),
             "tags": prompt.tags,
             "is_template": prompt.is_template,
@@ -71,6 +108,8 @@ def _format_prompt(prompt: Prompt, fmt: str) -> str:
         f"Category:  {prompt.category}",
         f"Branded:   {'yes' if prompt.branded else 'no'}",
         f"Recs:      {'enabled' if prompt.recommendation_enabled else 'disabled'}",
+        f"Alignment: {'enabled' if prompt.alignment_enabled else 'disabled'}",
+        f"Position:  {prompt.alignment_position_id or '-'}",
         f"Brand ID:  {prompt.brand_id}",
         f"Tags:      {', '.join(prompt.tags) if prompt.tags else '-'}",
         f"Template:  {'yes' if prompt.is_template else 'no'}",
@@ -123,12 +162,23 @@ def prompts():
 @click.option("--tags", default="", help="Comma-separated tags")
 @click.option("--branded/--unbranded", default=None, help="Override brand-name auto-detection")
 @click.option("--recommendations/--no-recommendations", default=True, help="Enable recommendation judging for this prompt")
+@click.option("--alignment/--no-alignment", default=None, help="Enable alignment judging for this prompt")
+@click.option("--alignment-position", default=None, help="Canonical position UUID or topic")
 @click.option("--template", is_flag=True, help="Mark as template")
 @click.option("--format", "fmt", default="text", type=click.Choice(["text", "json"]))
-def add(text, category, brand, tags, branded, recommendations, template, fmt):
+def add(text, category, brand, tags, branded, recommendations, alignment, alignment_position, template, fmt):
     """Add a new prompt."""
     qs = _qs()
     brand_id = _resolve_brand_id(qs, brand)
+    alignment_position_id = _resolve_alignment_position(
+        qs,
+        brand_id,
+        alignment_position,
+    )
+    alignment_enabled = bool(alignment_position_id) if alignment is None else alignment
+    if alignment_enabled and alignment_position_id is None:
+        click.echo("Error: --alignment requires --alignment-position.", err=True)
+        raise SystemExit(1)
     variables = Prompt.extract_variables(text) if template else []
     prompt = Prompt(
         text=text,
@@ -136,6 +186,8 @@ def add(text, category, brand, tags, branded, recommendations, template, fmt):
         brand_id=brand_id,
         branded=_resolve_branded(qs, text, brand_id, branded),
         recommendation_enabled=recommendations,
+        alignment_enabled=alignment_enabled,
+        alignment_position_id=alignment_position_id,
         tags=[t.strip() for t in tags.split(",") if t.strip()] if tags else [],
         is_template=1 if template else 0,
         variables=variables,
@@ -169,6 +221,7 @@ def list_prompts(category, tag, brand, active, fmt):
             "category": p.category,
             "branded": "yes" if p.branded else "no",
             "recommendations": "yes" if p.recommendation_enabled else "no",
+            "alignment": "yes" if p.alignment_enabled and p.alignment_position_id else "no",
             "text": p.text,
             "tags": ", ".join(p.tags) if p.tags else "-",
         }
@@ -195,8 +248,10 @@ def show(prompt_id, fmt):
 @click.option("--tags", default=None, help="Comma-separated tags (replaces existing)")
 @click.option("--branded/--unbranded", default=None, help="Set branded metadata")
 @click.option("--recommendations/--no-recommendations", default=None, help="Set recommendation judging metadata")
+@click.option("--alignment/--no-alignment", default=None, help="Set alignment judging metadata")
+@click.option("--alignment-position", default=None, help="Canonical position UUID or topic")
 @click.option("--format", "fmt", default="text", type=click.Choice(["text", "json"]))
-def edit(prompt_id, text, category, tags, branded, recommendations, fmt):
+def edit(prompt_id, text, category, tags, branded, recommendations, alignment, alignment_position, fmt):
     """Edit a prompt."""
     qs = _qs()
     prompt = qs.get_prompt(UUID(prompt_id))
@@ -215,6 +270,20 @@ def edit(prompt_id, text, category, tags, branded, recommendations, fmt):
         prompt.branded = branded
     if recommendations is not None:
         prompt.recommendation_enabled = recommendations
+    if alignment_position is not None:
+        prompt.alignment_position_id = _resolve_alignment_position(
+            qs,
+            prompt.brand_id,
+            alignment_position,
+        )
+        prompt.alignment_enabled = True
+    if alignment is not None:
+        prompt.alignment_enabled = alignment
+        if not alignment:
+            prompt.alignment_position_id = None
+        elif prompt.alignment_position_id is None:
+            click.echo("Error: --alignment requires --alignment-position.", err=True)
+            raise SystemExit(1)
     qs.update_prompt(prompt)
     click.echo(_format_prompt(prompt, fmt))
 
@@ -237,11 +306,12 @@ def import_prompts(filepath, fmt):
     JSON format: [{"text": "...", "category": "data_warehouse", "brand_id": "<uuid>", "tags": ["daily"]}]
     Optional "branded": true/false overrides auto-detection.
     Optional "recommendation_enabled": true/false controls recommendation judging.
+    Optional "alignment_position_id" links the prompt to a canonical position.
 
     \b
     CONTEXT FOR AGENTS:
-      The starter prompts file is at ~/.surfaced/prompts_import.json (or
-      prompts_import.json in the project root). You can use it as a template.
+      Use a plain prompt-list JSON file for this command. Use 'surfaced setup'
+      to load bundled example prompts and canonical positions together.
       The brand_id in the JSON must be a valid UUID from 'surfaced brands list'.
     """
     with open(filepath) as f:
@@ -251,6 +321,18 @@ def import_prompts(filepath, fmt):
     count = 0
     for item in data:
         brand_id = UUID(item["brand_id"])
+        alignment_position_id = _resolve_alignment_position(
+            qs,
+            brand_id,
+            item.get("alignment_position_id") or item.get("alignment_position"),
+        )
+        alignment_enabled = item.get(
+            "alignment_enabled",
+            bool(alignment_position_id),
+        )
+        if alignment_enabled and alignment_position_id is None:
+            click.echo("Error: alignment_enabled requires alignment_position_id.", err=True)
+            raise SystemExit(1)
         variables = Prompt.extract_variables(item["text"]) if item.get("is_template") else []
         prompt = Prompt(
             text=item["text"],
@@ -258,6 +340,8 @@ def import_prompts(filepath, fmt):
             brand_id=brand_id,
             branded=_resolve_branded(qs, item["text"], brand_id, item.get("branded")),
             recommendation_enabled=item.get("recommendation_enabled", True),
+            alignment_enabled=alignment_enabled,
+            alignment_position_id=alignment_position_id,
             tags=item.get("tags", []),
             is_template=1 if item.get("is_template") else 0,
             variables=variables,
