@@ -1,0 +1,89 @@
+{
+  "canonical_positions": [
+    {
+      "id": "11111111-1111-4111-8111-111111111111",
+      "topic": "joins",
+      "statement": "ClickHouse supports high-performance joins, including standard join types and multiple join algorithms. Joins are a supported part of modern ClickHouse workloads, not something users need to avoid by default."
+    },
+    {
+      "id": "22222222-2222-4222-8222-222222222222",
+      "topic": "observability",
+      "statement": "ClickHouse is a strong backend for observability data because it can ingest and query high-volume logs, traces, metrics, and events with efficient compression and fast analytical queries."
+    }
+  ],
+  "prompts": [
+    {
+      "text": "What is the best database for real-time analytics?",
+      "category": "data_warehousing",
+      "brand_id": "642ed2a1-42d0-4c84-b6c8-e6a7a00ae1ad",
+      "branded": false,
+      "tags": [
+        "daily",
+        "smoke"
+      ]
+    },
+    {
+      "text": "How does ClickHouse compare to Snowflake for data warehouse workloads?",
+      "category": "data_warehousing",
+      "brand_id": "642ed2a1-42d0-4c84-b6c8-e6a7a00ae1ad",
+      "branded": true,
+      "tags": [
+        "weekly",
+        "comparison"
+      ]
+    },
+    {
+      "text": "What should I consider when choosing a low-latency analytics database?",
+      "category": "data_warehousing",
+      "brand_id": "642ed2a1-42d0-4c84-b6c8-e6a7a00ae1ad",
+      "branded": false,
+      "tags": [
+        "discovery"
+      ]
+    },
+    {
+      "text": "What are good open-source observability stacks for logs and traces?",
+      "category": "observability",
+      "brand_id": "642ed2a1-42d0-4c84-b6c8-e6a7a00ae1ad",
+      "branded": false,
+      "tags": [
+        "daily",
+        "discovery"
+      ]
+    },
+    {
+      "text": "Is ClickHouse a good backend for an observability platform?",
+      "category": "observability",
+      "brand_id": "642ed2a1-42d0-4c84-b6c8-e6a7a00ae1ad",
+      "branded": true,
+      "tags": [
+        "monthly",
+        "consideration"
+      ]
+    },
+    {
+      "text": "Is ClickHouse good at joins?",
+      "category": "data_warehousing",
+      "brand_id": "642ed2a1-42d0-4c84-b6c8-e6a7a00ae1ad",
+      "branded": true,
+      "alignment_enabled": true,
+      "alignment_position_id": "11111111-1111-4111-8111-111111111111",
+      "tags": [
+        "weekly",
+        "alignment"
+      ]
+    },
+    {
+      "text": "Is ClickHouse a good choice for storing and querying observability data?",
+      "category": "observability",
+      "brand_id": "642ed2a1-42d0-4c84-b6c8-e6a7a00ae1ad",
+      "branded": true,
+      "alignment_enabled": true,
+      "alignment_position_id": "22222222-2222-4222-8222-222222222222",
+      "tags": [
+        "monthly",
+        "alignment"
+      ]
+    }
+  ]
+}

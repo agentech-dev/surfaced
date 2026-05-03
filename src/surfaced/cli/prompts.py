@@ -310,8 +310,8 @@ def import_prompts(filepath, fmt):
 
     \b
     CONTEXT FOR AGENTS:
-      The starter prompts file is at ~/.surfaced/prompts_import.json (or
-      prompts_import.json in the project root). You can use it as a template.
+      Use a plain prompt-list JSON file for this command. Use 'surfaced setup'
+      to load bundled example prompts and canonical positions together.
       The brand_id in the JSON must be a valid UUID from 'surfaced brands list'.
     """
     with open(filepath) as f:
