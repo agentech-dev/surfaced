@@ -136,13 +136,27 @@ def test_recommendation_result_stores_raw_output():
     result = judge_recommendation(
         "Acme is a strong fit.",
         brand,
-        judge=lambda response, brand: "recommended",
+        judge=lambda response, brand: '{"status":"recommended"}',
     )
 
     assert result.status == "recommended"
-    assert result.raw_output == "recommended"
+    assert result.raw_output == '{"status":"recommended"}'
     assert result.error_message == ""
     assert result.attempted is True
+
+
+def test_recommendation_parses_structured_output():
+    brand = _make_brand()
+
+    result = judge_recommendation(
+        "Acme is a strong fit.",
+        brand,
+        judge=lambda response, brand: '{"status": "recommended"}',
+    )
+
+    assert result.status == "recommended"
+    assert result.raw_output == '{"status": "recommended"}'
+    assert result.error_message == ""
 
 
 def test_recommendation_parses_markdown_label_with_explanation():

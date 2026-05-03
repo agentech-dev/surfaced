@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 import re
+import json
 from collections.abc import Callable
 from dataclasses import dataclass
 from time import perf_counter
@@ -155,13 +156,28 @@ def _call_recommendation_judge(response_text: str, brand: Brand) -> str:
     client = anthropic.Anthropic(api_key=api_key)
     response = client.messages.create(
         model=get_recommendation_judge_model(),
-        max_tokens=4,
+        max_tokens=32,
         temperature=0,
         system=(
             "Classify whether the answer recommends the tracked brand. "
-            "Reply with one lowercase word only: recommended, neutral, or negative. "
-            "Do not include Markdown or explanation."
+            "Judge only the tracked brand, not competitors."
         ),
+        output_config={
+            "format": {
+                "type": "json_schema",
+                "schema": {
+                    "type": "object",
+                    "properties": {
+                        "status": {
+                            "type": "string",
+                            "enum": ["recommended", "neutral", "negative"],
+                        },
+                    },
+                    "required": ["status"],
+                    "additionalProperties": False,
+                },
+            },
+        },
         messages=[{
             "role": "user",
             "content": "\n".join([
@@ -181,7 +197,17 @@ def _call_recommendation_judge(response_text: str, brand: Brand) -> str:
 
 
 def _parse_recommendation_status(raw_output: str) -> str:
-    """Parse a leading judge label, tolerating Markdown and extra text."""
+    """Parse structured judge output, with a tolerant label fallback."""
+    try:
+        parsed = json.loads(raw_output)
+    except json.JSONDecodeError:
+        parsed = None
+
+    if isinstance(parsed, dict):
+        status = str(parsed.get("status", "")).casefold()
+        if status in JUDGED_RECOMMENDATION_STATUSES:
+            return status
+
     match = re.match(
         r"^[\s*_`#>-]*(recommended|neutral|negative)\b",
         raw_output.strip(),
