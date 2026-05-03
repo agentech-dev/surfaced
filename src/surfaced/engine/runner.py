@@ -14,6 +14,7 @@ from surfaced.db.queries import QueryService
 from surfaced.engine.analyzer import (
     check_brand_mentioned,
     find_competitors_mentioned,
+    get_recommendation_judge_model,
     is_recommendation_judge_enabled,
     judge_recommendation,
 )
@@ -109,6 +110,7 @@ def execute_run(
     errors = 0
     rate_limiters: dict[UUID, RateLimiter] = {}
     recommendation_judge_enabled = is_recommendation_judge_enabled()
+    recommendation_judge_model = get_recommendation_judge_model()
 
     try:
         for prov_record in providers:
@@ -147,7 +149,7 @@ def execute_run(
                             ):
                                 _echo_run_log_row(
                                     next_row,
-                                    recommendation_judge_label(),
+                                    recommendation_judge_model,
                                     f"JUDGE: Was {brand.name} recommended?",
                                 )
                             recommendation_judgment = judge_recommendation(
@@ -248,12 +250,6 @@ def execute_run(
     qs.update_run(run_record)
     click.echo(f"\nRun {run_record.id} finished: {completed} succeeded, {errors} failed")
     return run_record
-
-
-def recommendation_judge_label() -> str:
-    """Return a compact display label for the recommendation judge."""
-    return "Haiku"
-
 
 def _echo_run_log_header() -> None:
     """Print a Markdown-style streaming table header for run progress."""

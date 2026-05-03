@@ -4,7 +4,6 @@ from surfaced.engine.runner import (
     _format_run_log_row,
     _format_run_log_separator,
     _truncate_run_log_cell,
-    recommendation_judge_label,
 )
 
 
@@ -32,5 +31,12 @@ def test_run_log_cell_truncates_and_escapes_pipes():
     assert _truncate_run_log_cell("abc | def ghi", 10) == r"abc \|..."
 
 
-def test_recommendation_judge_label_is_compact():
-    assert recommendation_judge_label() == "Haiku"
+def test_run_log_row_can_show_configured_judge_model():
+    row = _format_run_log_row([
+        "1",
+        "claude-haiku-4-5",
+        "JUDGE: Was ClickHouse recommended?",
+    ])
+
+    assert "claude-haiku-4-5" in row
+    assert "JUDGE: Was ClickHouse recommended?" in row
