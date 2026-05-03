@@ -3,6 +3,7 @@
 import json
 import os
 import shutil
+from uuid import UUID
 
 import click
 import questionary
@@ -10,6 +11,7 @@ import questionary
 from surfaced.db.queries import QueryService
 from surfaced.engine.analyzer import is_prompt_branded
 from surfaced.models.brand import Brand
+from surfaced.models.canonical_position import CanonicalPosition
 from surfaced.models.prompt import Prompt
 from surfaced.models.provider import Provider
 
@@ -257,8 +259,8 @@ def _step_prompts(brand: Brand | None):
     choice = questionary.select(
         "How would you like to add prompts?",
         choices=[
-            questionary.Choice("Import starter prompts", value="starter"),
             questionary.Choice("Import from JSON file", value="file"),
+            questionary.Choice("Import example prompts", value="example"),
             questionary.Choice("Skip", value="skip"),
         ],
     ).ask()
@@ -269,12 +271,12 @@ def _step_prompts(brand: Brand | None):
 
     qs = QueryService()
 
-    if choice == "starter":
-        starter_path = _find_starter_prompts()
-        if not starter_path:
-            click.echo("  ✗ Could not find prompts_import.json")
+    if choice == "example":
+        example_path = _find_example_prompts()
+        if not example_path:
+            click.echo("  ✗ Could not find example_prompts.json")
             return
-        _import_prompts_file(qs, starter_path, brand)
+        _import_prompts_file(qs, example_path, brand)
 
     elif choice == "file":
         path = questionary.path("Path to JSON file:").ask()
@@ -287,11 +289,11 @@ def _step_prompts(brand: Brand | None):
         _import_prompts_file(qs, path, brand)
 
 
-def _find_starter_prompts() -> str | None:
-    """Find the prompts_import.json file."""
+def _find_example_prompts() -> str | None:
+    """Find the example_prompts.json file."""
     candidates = [
-        os.path.join(_find_project_dir(), "prompts_import.json"),
-        os.path.join(os.path.expanduser("~"), ".surfaced", "prompts_import.json"),
+        os.path.join(_find_project_dir(), "example_prompts.json"),
+        os.path.join(os.path.expanduser("~"), ".surfaced", "example_prompts.json"),
     ]
     for c in candidates:
         if os.path.exists(c):
@@ -304,19 +306,46 @@ def _import_prompts_file(qs: QueryService, path: str, brand: Brand) -> None:
     with open(path) as f:
         data = json.load(f)
 
-    count = 0
-    for item in data:
+    canonical_positions = data["canonical_positions"]
+    prompts = data["prompts"]
+    position_id_map = {}
+    position_count = 0
+    for item in canonical_positions:
+        position = CanonicalPosition(
+            id=UUID(item["id"]),
+            brand_id=brand.id,
+            topic=item["topic"],
+            statement=item["statement"],
+        )
+        if not qs.get_canonical_position(position.id, active_only=False):
+            qs.insert_canonical_position(position)
+            position_count += 1
+        position_id_map[item["id"]] = position.id
+
+    prompt_count = 0
+    for item in prompts:
+        alignment_position_id = item.get("alignment_position_id")
+        if alignment_position_id:
+            alignment_position_id = position_id_map.get(
+                alignment_position_id,
+                UUID(alignment_position_id),
+            )
         prompt = Prompt(
             text=item["text"],
             category=item["category"],
             brand_id=brand.id,
             branded=item["branded"] if "branded" in item else is_prompt_branded(item["text"], brand),
+            recommendation_enabled=item.get("recommendation_enabled", True),
+            alignment_enabled=item.get("alignment_enabled", bool(alignment_position_id)),
+            alignment_position_id=alignment_position_id,
             tags=item.get("tags", []),
         )
         qs.insert_prompt(prompt)
-        count += 1
+        prompt_count += 1
 
-    click.echo(f"  ✓ Imported {count} prompts for brand '{brand.name}'")
+    if position_count:
+        click.echo(f"  ✓ Imported {position_count} canonical positions for brand '{brand.name}'")
+    click.echo(f"  ✓ Imported {prompt_count} prompts for brand '{brand.name}'")
 
 
 # ── Main command ──────────────────────────────────────────────────────
@@ -331,7 +360,7 @@ def setup(step):
       Step 1 (keys)      — Configure API keys (written to ~/.surfaced/.env)
       Step 2 (brand)     — Create a brand to track (name, aliases, competitors)
       Step 3 (providers) — Auto-create providers from detected keys and CLI tools
-      Step 4 (prompts)   — Import starter prompts or load from a JSON file
+      Step 4 (prompts)   — Load prompts from a JSON file or examples
 
     \b
     Use --step to run a single step, e.g.:
@@ -345,7 +374,7 @@ def setup(step):
         - Write API keys directly to ~/.surfaced/.env
         - surfaced brands add --name "X" --aliases "A,B" --competitors "C,D"
         - surfaced providers add --provider anthropic --mode api
-        - surfaced prompts import prompts_import.json
+        - surfaced setup --step prompts
       After setup, run 'surfaced run --brand <name>' to execute prompts.
     """
     click.echo("════════════════════════════════════════════════════")

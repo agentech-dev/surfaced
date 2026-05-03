@@ -8,6 +8,7 @@ from uuid import UUID
 
 import click
 
+from surfaced.cli.formatting import format_markdown_table
 from surfaced.db.queries import QueryService
 
 def _find_queries_dir():
@@ -48,21 +49,10 @@ def _available_queries(queries_dir: str) -> list[str]:
 
 
 def _format_table(rows: list[dict]) -> str:
-    """Format rows as an aligned text table."""
+    """Format rows as a Markdown table."""
     if not rows:
         return "No results."
-    columns = list(rows[0].keys())
-    widths = {col: len(col) for col in columns}
-    for row in rows:
-        for col in columns:
-            widths[col] = max(widths[col], len(str(row[col])))
-
-    header = "  ".join(col.ljust(widths[col]) for col in columns)
-    separator = "  ".join("-" * widths[col] for col in columns)
-    lines = [header, separator]
-    for row in rows:
-        lines.append("  ".join(str(row[col]).ljust(widths[col]) for col in columns))
-    return "\n".join(lines)
+    return format_markdown_table(rows)
 
 
 def _format_csv(rows: list[dict]) -> str:
@@ -87,7 +77,11 @@ def analytics(query_name, brand, days, fmt):
     \b
     Available queries:
       summary              Overall dashboard: total runs, mention rate, avg latency
+      alignment_judge_failures  Raw alignment judge output and errors
+      alignment_rate       Alignment rate over time by provider and position
       mention_frequency    Mention rate over time, grouped by day and branded split
+      recommendation_judge_failures  Raw judge output and errors for failed judgments
+      recommendation_rate  Recommendation rate over time for judged brand mentions
       share_of_voice       Brand vs competitor mention share, by category and branded split
       provider_comparison  Visibility comparison across AI providers and branded split
       consistency          Response stability for repeated prompts
@@ -95,7 +89,11 @@ def analytics(query_name, brand, days, fmt):
     \b
     Examples:
       surfaced analytics summary --brand "Acme" --days 30
+      surfaced analytics alignment_rate --brand "Acme" --days 30
+      surfaced analytics alignment_judge_failures --brand "Acme" --days 7
       surfaced analytics mention_frequency --brand "Acme" --days 7
+      surfaced analytics recommendation_judge_failures --brand "Acme" --days 7
+      surfaced analytics recommendation_rate --brand "Acme" --days 30
       surfaced analytics provider_comparison --brand "Acme" --days 30
       surfaced analytics share_of_voice --brand "Acme" --format json
 

@@ -7,6 +7,9 @@ from datetime import datetime
 from uuid import UUID, uuid4
 
 
+NIL_UUID = UUID("00000000-0000-0000-0000-000000000000")
+
+
 @dataclass
 class Answer:
     run_id: UUID
@@ -26,6 +29,10 @@ class Answer:
     output_tokens: int = 0
     error_message: str = ""
     brand_mentioned: int = 0
+    recommendation_status: str = "not_mentioned"
+    alignment_status: str = "not_applicable"
+    alignment_position_id: UUID | None = None
+    alignment_rationale: str = ""
     competitors_mentioned: list[str] = field(default_factory=list)
     created_at: datetime = field(default_factory=datetime.now)
 
@@ -49,6 +56,16 @@ class Answer:
             status=d["status"],
             error_message=d.get("error_message", ""),
             brand_mentioned=d.get("brand_mentioned", 0),
+            recommendation_status=d.get("recommendation_status", "not_mentioned"),
+            alignment_status=d.get("alignment_status", "not_applicable"),
+            alignment_position_id=_optional_uuid(d.get("alignment_position_id")),
+            alignment_rationale=d.get("alignment_rationale", ""),
             competitors_mentioned=list(d.get("competitors_mentioned", [])),
             created_at=d["created_at"] if isinstance(d["created_at"], datetime) else datetime.fromisoformat(str(d["created_at"])),
         )
+
+
+def _optional_uuid(value) -> UUID | None:
+    if value in (None, "", NIL_UUID, str(NIL_UUID)):
+        return None
+    return UUID(str(value)) if not isinstance(value, UUID) else value

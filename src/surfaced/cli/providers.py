@@ -5,6 +5,7 @@ from uuid import UUID
 
 import click
 
+from surfaced.cli.formatting import format_markdown_table
 from surfaced.db.queries import QueryService
 from surfaced.models.provider import Provider
 
@@ -55,24 +56,12 @@ def _format_provider(provider: Provider, fmt: str) -> str:
 
 
 def _build_provider_help() -> str:
-    lines = ["Provider vendor. Available combinations:\n"]
-    for (prov, mode), (name, model, req, desc) in PROVIDER_PRESETS.items():
-        lines.append(f"  {prov:12s} + {mode:3s} → model={model} — {desc}")
-    return "\n".join(lines)
+    return "Provider vendor"
 
 
 @click.group()
 def providers():
     """Manage AI providers.
-
-    \b
-    Available provider + mode combinations:
-      anthropic + api   model=claude-sonnet-4-6       Anthropic API (requires ANTHROPIC_API_KEY)
-      openai    + api   model=gpt-5.2                 OpenAI API (requires OPENAI_API_KEY)
-      google    + api   model=gemini-3.1-pro-preview  Google Gemini API (requires GEMINI_API_KEY)
-      anthropic + cli   model=claude-sonnet-4-6       Claude Code CLI subprocess
-      openai    + cli   model=codex                   OpenAI Codex CLI subprocess
-      google    + cli   model=gemini-3.1-pro-preview  Google Gemini CLI subprocess
 
     \b
     Examples:
@@ -109,7 +98,6 @@ def add(interactive, name, provider_vendor, mode, model, rate_limit, fmt):
     \b
     With --provider and --mode, defaults are filled in automatically:
       surfaced providers add --provider anthropic --mode api
-        → name="Claude Sonnet 4.6", model=claude-sonnet-4-6
 
     \b
     Override any default:
@@ -237,8 +225,16 @@ def list_providers(fmt):
     if not providers_list:
         click.echo("No providers found.")
         return
-    for p in providers_list:
-        click.echo(f"  {p.id}  {p.name} ({p.model}) [{p.provider}/{p.execution_mode}]")
+    click.echo(format_markdown_table([
+        {
+            "id": p.id,
+            "name": p.name,
+            "provider": p.provider,
+            "mode": p.execution_mode,
+            "model": p.model,
+        }
+        for p in providers_list
+    ]))
 
 
 @providers.command()

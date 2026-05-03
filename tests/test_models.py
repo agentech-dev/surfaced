@@ -4,9 +4,12 @@ from datetime import datetime
 from uuid import UUID, uuid4
 
 from surfaced.models.brand import Brand
+from surfaced.models.alignment_judgment import AlignmentJudgment
 from surfaced.models.prompt import Prompt
+from surfaced.models.canonical_position import CanonicalPosition
 from surfaced.models.answer import Answer
 from surfaced.models.provider import Provider
+from surfaced.models.recommendation_judgment import RecommendationJudgment
 from surfaced.models.run import Run
 from surfaced.cli.prompts import _format_prompt
 
@@ -66,6 +69,26 @@ def test_prompt_branded_defaults_false():
     assert prompt.branded is False
 
 
+def test_prompt_recommendation_enabled_defaults_true():
+    prompt = Prompt(
+        text="What are the best CRM tools?",
+        category="crm",
+        brand_id=uuid4(),
+    )
+    assert prompt.recommendation_enabled is True
+
+
+def test_prompt_alignment_defaults_disabled():
+    prompt = Prompt(
+        text="Are joins good?",
+        category="data_warehouse",
+        brand_id=uuid4(),
+    )
+
+    assert prompt.alignment_enabled is False
+    assert prompt.alignment_position_id is None
+
+
 def test_prompt_from_dict_branded():
     now = datetime.now()
     prompt = Prompt.from_dict({
@@ -74,10 +97,16 @@ def test_prompt_from_dict_branded():
         "category": "crm",
         "brand_id": uuid4(),
         "branded": True,
+        "recommendation_enabled": False,
+        "alignment_enabled": True,
+        "alignment_position_id": uuid4(),
         "created_at": now,
         "updated_at": now,
     })
     assert prompt.branded is True
+    assert prompt.recommendation_enabled is False
+    assert prompt.alignment_enabled is True
+    assert prompt.alignment_position_id is not None
 
 
 def test_prompt_format_includes_branded():
@@ -88,7 +117,31 @@ def test_prompt_format_includes_branded():
         branded=True,
     )
     assert '"branded": true' in _format_prompt(prompt, "json")
+    assert '"recommendation_enabled": true' in _format_prompt(prompt, "json")
+    assert '"alignment_enabled": false' in _format_prompt(prompt, "json")
     assert "Branded:   yes" in _format_prompt(prompt, "text")
+    assert "Recs:      enabled" in _format_prompt(prompt, "text")
+    assert "Alignment: disabled" in _format_prompt(prompt, "text")
+
+
+def test_canonical_position_from_dict():
+    now = datetime.now()
+    brand_id = uuid4()
+    data = {
+        "id": uuid4(),
+        "brand_id": brand_id,
+        "topic": "joins",
+        "statement": "ClickHouse supports high-performance joins.",
+        "is_active": 1,
+        "created_at": now,
+        "updated_at": now,
+    }
+
+    position = CanonicalPosition.from_dict(data)
+
+    assert position.brand_id == brand_id
+    assert position.topic == "joins"
+    assert position.statement == "ClickHouse supports high-performance joins."
 
 
 def test_provider_from_dict():
@@ -148,10 +201,88 @@ def test_answer_from_dict():
         "status": "success",
         "error_message": "",
         "brand_mentioned": 1,
+        "recommendation_status": "recommended",
+        "alignment_status": "aligned",
+        "alignment_position_id": uuid4(),
+        "alignment_rationale": "The answer matches the canonical position.",
         "competitors_mentioned": ["Globex"],
         "created_at": now,
     }
     answer = Answer.from_dict(data)
     assert answer.status == "success"
     assert answer.brand_mentioned == 1
+    assert answer.recommendation_status == "recommended"
+    assert answer.alignment_status == "aligned"
+    assert answer.alignment_position_id is not None
+    assert answer.alignment_rationale == "The answer matches the canonical position."
     assert answer.prompt_branded is True
+
+
+def test_answer_recommendation_status_defaults_not_mentioned():
+    answer = Answer(
+        run_id=uuid4(),
+        prompt_id=uuid4(),
+        provider_id=uuid4(),
+        brand_id=uuid4(),
+        prompt_text="Test prompt",
+        prompt_category="crm",
+        response_text="Test response",
+        model="claude-sonnet-4-6",
+        provider_name="test",
+        latency_ms=500,
+        status="success",
+    )
+
+    assert answer.recommendation_status == "not_mentioned"
+    assert answer.alignment_status == "not_applicable"
+    assert answer.alignment_position_id is None
+
+
+def test_recommendation_judgment_from_dict():
+    now = datetime.now()
+    data = {
+        "id": uuid4(),
+        "answer_id": uuid4(),
+        "run_id": uuid4(),
+        "prompt_id": uuid4(),
+        "provider_id": uuid4(),
+        "brand_id": uuid4(),
+        "judge_model": "claude-haiku-4-5",
+        "recommendation_status": "judge_failed",
+        "raw_output": "probably",
+        "error_message": "Judge returned an invalid recommendation label",
+        "latency_ms": 123,
+        "created_at": now,
+    }
+
+    judgment = RecommendationJudgment.from_dict(data)
+
+    assert judgment.recommendation_status == "judge_failed"
+    assert judgment.raw_output == "probably"
+    assert judgment.error_message == "Judge returned an invalid recommendation label"
+
+
+def test_alignment_judgment_from_dict():
+    now = datetime.now()
+    data = {
+        "id": uuid4(),
+        "answer_id": uuid4(),
+        "run_id": uuid4(),
+        "prompt_id": uuid4(),
+        "provider_id": uuid4(),
+        "brand_id": uuid4(),
+        "alignment_position_id": uuid4(),
+        "judge_model": "claude-haiku-4-5",
+        "alignment_status": "misaligned",
+        "rationale": "The answer contradicts the canonical position.",
+        "raw_output": '{"status":"misaligned"}',
+        "error_message": "",
+        "latency_ms": 123,
+        "created_at": now,
+    }
+
+    judgment = AlignmentJudgment.from_dict(data)
+
+    assert judgment.alignment_status == "misaligned"
+    assert judgment.rationale == "The answer contradicts the canonical position."
+    assert judgment.raw_output == '{"status":"misaligned"}'

@@ -5,6 +5,7 @@ from uuid import UUID
 
 import click
 
+from surfaced.cli.formatting import format_markdown_table
 from surfaced.db.queries import QueryService
 from surfaced.models.brand import Brand
 
@@ -108,9 +109,14 @@ def list_brands(active, fmt):
     if not brands_list:
         click.echo("No brands found.")
         return
-    for b in brands_list:
-        status = "" if b.is_active else " [inactive]"
-        click.echo(f"  {b.id}  {b.name}{status}")
+    click.echo(format_markdown_table([
+        {
+            "id": b.id,
+            "name": b.name,
+            "status": "active" if b.is_active else "inactive",
+        }
+        for b in brands_list
+    ]))
 
 
 @brands.command()
