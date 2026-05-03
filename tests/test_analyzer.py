@@ -4,7 +4,9 @@ from uuid import uuid4
 
 from surfaced.engine.analyzer import (
     check_brand_mentioned,
+    classify_recommendation,
     find_competitors_mentioned,
+    is_recommendation_judge_enabled,
     is_prompt_branded,
 )
 from surfaced.models.brand import Brand
@@ -74,3 +76,99 @@ def test_prompt_branded_case_insensitive():
 def test_prompt_unbranded():
     brand = _make_brand()
     assert not is_prompt_branded("What are the best CRM tools?", brand)
+
+
+def test_recommendation_not_mentioned():
+    brand = _make_brand()
+
+    result = classify_recommendation(
+        "Widget Co is a better fit.",
+        brand,
+        judge=lambda response, brand: "recommended",
+    )
+
+    assert result == "not_mentioned"
+
+
+def test_recommendation_not_judged_when_disabled():
+    brand = _make_brand()
+
+    result = classify_recommendation(
+        "Acme is a strong fit.",
+        brand,
+        enabled=False,
+        judge=lambda response, brand: "recommended",
+    )
+
+    assert result == "not_judged"
+
+
+def test_recommendation_recommended():
+    brand = _make_brand()
+
+    result = classify_recommendation(
+        "Acme is a strong fit.",
+        brand,
+        judge=lambda response, brand: "recommended",
+    )
+
+    assert result == "recommended"
+
+
+def test_recommendation_neutral():
+    brand = _make_brand()
+
+    result = classify_recommendation(
+        "Acme is one of several available tools.",
+        brand,
+        judge=lambda response, brand: "neutral",
+    )
+
+    assert result == "neutral"
+
+
+def test_recommendation_negative():
+    brand = _make_brand()
+
+    result = classify_recommendation(
+        "I would avoid Acme for this use case.",
+        brand,
+        judge=lambda response, brand: "negative",
+    )
+
+    assert result == "negative"
+
+
+def test_recommendation_invalid_judge_output_fails():
+    brand = _make_brand()
+
+    result = classify_recommendation(
+        "Acme is a strong fit.",
+        brand,
+        judge=lambda response, brand: "probably",
+    )
+
+    assert result == "judge_failed"
+
+
+def test_recommendation_judge_exception_fails():
+    brand = _make_brand()
+
+    def judge(response, brand):
+        raise RuntimeError("judge failed")
+
+    result = classify_recommendation("Acme is a strong fit.", brand, judge=judge)
+
+    assert result == "judge_failed"
+
+
+def test_recommendation_global_toggle_defaults_enabled(monkeypatch):
+    monkeypatch.delenv("SURFACED_RECOMMENDATION_JUDGE_ENABLED", raising=False)
+
+    assert is_recommendation_judge_enabled()
+
+
+def test_recommendation_global_toggle_false(monkeypatch):
+    monkeypatch.setenv("SURFACED_RECOMMENDATION_JUDGE_ENABLED", "false")
+
+    assert not is_recommendation_judge_enabled()

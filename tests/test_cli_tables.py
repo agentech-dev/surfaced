@@ -54,6 +54,7 @@ def test_prompts_list_uses_markdown_table(monkeypatch):
         category="data_warehouse",
         brand_id=BRAND_ID,
         branded=True,
+        recommendation_enabled=False,
         tags=["daily", "weekly"],
     )
 
@@ -70,6 +71,7 @@ def test_prompts_list_uses_markdown_table(monkeypatch):
         "id": PROMPT_ID,
         "category": "data_warehouse",
         "branded": "yes",
+        "recommendations": "no",
         "text": "How does Acme compare?",
         "tags": "daily, weekly",
     }]) + "\n"

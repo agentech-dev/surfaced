@@ -68,12 +68,14 @@ Built-in queries available via `surfaced analytics <query>`:
 
 - **summary** — overall dashboard metrics
 - **mention_frequency** — mention rate over time by day and branded/unbranded prompt split
+- **recommendation_rate** — recommendation rate over time for judged brand mentions
 - **share_of_voice** — brand vs competitor mention share by category and branded/unbranded prompt split
 - **provider_comparison** — visibility comparison across AI providers and branded/unbranded prompt split
 - **consistency** — response stability for specific prompts
 
 ```bash
 surfaced analytics mention_frequency --brand "YourBrand" --days 7
+surfaced analytics recommendation_rate --brand "YourBrand" --days 30
 surfaced analytics provider_comparison --brand "YourBrand" --days 30
 surfaced analytics share_of_voice --brand "YourBrand" --days 30
 ```
@@ -95,6 +97,8 @@ surfaced analytics share_of_voice --brand "YourBrand" --days 30
 - `GEMINI_API_KEY` — Google Gemini API provider
 - `CLICKHOUSE_HOST` — ClickHouse host (default: `localhost`)
 - `CLICKHOUSE_PORT` — ClickHouse HTTP port (default: `8123`)
+- `SURFACED_RECOMMENDATION_JUDGE_ENABLED` — Recommendation judge toggle (default: `true`)
+- `SURFACED_RECOMMENDATION_JUDGE_MODEL` — Anthropic judge model (default: `claude-haiku-4-5`)
 
 ## Development
 

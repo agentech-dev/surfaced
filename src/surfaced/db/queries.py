@@ -124,12 +124,14 @@ class QueryService:
             "prompts",
             [[
                 str(prompt.id), prompt.text, prompt.category,
-                prompt.branded, prompt.tags, str(prompt.brand_id),
+                prompt.branded, prompt.recommendation_enabled,
+                prompt.tags, str(prompt.brand_id),
                 prompt.is_template, prompt.variables, prompt.is_active,
                 prompt.created_at, prompt.updated_at,
             ]],
             column_names=[
-                "id", "text", "category", "branded", "tags", "brand_id",
+                "id", "text", "category", "branded",
+                "recommendation_enabled", "tags", "brand_id",
                 "is_template", "variables", "is_active",
                 "created_at", "updated_at",
             ],
@@ -232,7 +234,8 @@ class QueryService:
                 answer.latency_ms,
                 answer.input_tokens, answer.output_tokens,
                 answer.status, answer.error_message,
-                answer.brand_mentioned, answer.competitors_mentioned,
+                answer.brand_mentioned, answer.recommendation_status,
+                answer.competitors_mentioned,
                 answer.created_at,
             ]],
             column_names=[
@@ -241,7 +244,7 @@ class QueryService:
                 "model", "provider_name", "latency_ms",
                 "input_tokens", "output_tokens",
                 "status", "error_message",
-                "brand_mentioned", "competitors_mentioned",
+                "brand_mentioned", "recommendation_status", "competitors_mentioned",
                 "created_at",
             ],
         )

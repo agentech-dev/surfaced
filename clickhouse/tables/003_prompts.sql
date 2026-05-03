@@ -4,6 +4,7 @@ CREATE TABLE IF NOT EXISTS prompts
     text String,
     category LowCardinality(String),
     branded Bool DEFAULT false,
+    recommendation_enabled Bool DEFAULT true,
     tags Array(String) DEFAULT [],
     brand_id UUID,
     is_template UInt8 DEFAULT 0,

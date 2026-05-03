@@ -78,6 +78,7 @@ def analytics(query_name, brand, days, fmt):
     Available queries:
       summary              Overall dashboard: total runs, mention rate, avg latency
       mention_frequency    Mention rate over time, grouped by day and branded split
+      recommendation_rate  Recommendation rate over time for judged brand mentions
       share_of_voice       Brand vs competitor mention share, by category and branded split
       provider_comparison  Visibility comparison across AI providers and branded split
       consistency          Response stability for repeated prompts
@@ -86,6 +87,7 @@ def analytics(query_name, brand, days, fmt):
     Examples:
       surfaced analytics summary --brand "Acme" --days 30
       surfaced analytics mention_frequency --brand "Acme" --days 7
+      surfaced analytics recommendation_rate --brand "Acme" --days 30
       surfaced analytics provider_comparison --brand "Acme" --days 30
       surfaced analytics share_of_voice --brand "Acme" --format json
 

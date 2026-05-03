@@ -26,6 +26,7 @@ class Answer:
     output_tokens: int = 0
     error_message: str = ""
     brand_mentioned: int = 0
+    recommendation_status: str = "not_mentioned"
     competitors_mentioned: list[str] = field(default_factory=list)
     created_at: datetime = field(default_factory=datetime.now)
 
@@ -49,6 +50,7 @@ class Answer:
             status=d["status"],
             error_message=d.get("error_message", ""),
             brand_mentioned=d.get("brand_mentioned", 0),
+            recommendation_status=d.get("recommendation_status", "not_mentioned"),
             competitors_mentioned=list(d.get("competitors_mentioned", [])),
             created_at=d["created_at"] if isinstance(d["created_at"], datetime) else datetime.fromisoformat(str(d["created_at"])),
         )

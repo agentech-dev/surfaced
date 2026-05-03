@@ -311,6 +311,7 @@ def _import_prompts_file(qs: QueryService, path: str, brand: Brand) -> None:
             category=item["category"],
             brand_id=brand.id,
             branded=item["branded"] if "branded" in item else is_prompt_branded(item["text"], brand),
+            recommendation_enabled=item.get("recommendation_enabled", True),
             tags=item.get("tags", []),
         )
         qs.insert_prompt(prompt)

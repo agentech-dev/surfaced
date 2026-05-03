@@ -11,7 +11,12 @@ from uuid import UUID
 import click
 
 from surfaced.db.queries import QueryService
-from surfaced.engine.analyzer import check_brand_mentioned, find_competitors_mentioned
+from surfaced.engine.analyzer import (
+    check_brand_mentioned,
+    classify_recommendation,
+    find_competitors_mentioned,
+    is_recommendation_judge_enabled,
+)
 from surfaced.engine.rate_limiter import RateLimiter
 from surfaced.engine.template import render_prompt
 from surfaced.models.answer import Answer
@@ -92,6 +97,7 @@ def execute_run(
     completed = 0
     errors = 0
     rate_limiters: dict[UUID, RateLimiter] = {}
+    recommendation_judge_enabled = is_recommendation_judge_enabled()
 
     try:
         for prov_record in providers:
@@ -112,9 +118,19 @@ def execute_run(
 
                         brand_mentioned = 0
                         competitors_mentioned = []
+                        recommendation_status = "not_mentioned"
                         if brand:
                             brand_mentioned = 1 if check_brand_mentioned(response.text, brand) else 0
                             competitors_mentioned = find_competitors_mentioned(response.text, brand)
+                            recommendation_status = classify_recommendation(
+                                response.text,
+                                brand,
+                                brand_mentioned=bool(brand_mentioned),
+                                enabled=(
+                                    recommendation_judge_enabled
+                                    and prompt.recommendation_enabled
+                                ),
+                            )
 
                         answer = Answer(
                             run_id=run_record.id,
@@ -132,6 +148,7 @@ def execute_run(
                             output_tokens=response.output_tokens,
                             status="success",
                             brand_mentioned=brand_mentioned,
+                            recommendation_status=recommendation_status,
                             competitors_mentioned=competitors_mentioned,
                         )
                         qs.insert_answer(answer)
