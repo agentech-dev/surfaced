@@ -27,6 +27,12 @@ from surfaced.providers.registry import get_provider
 
 MAX_RETRIES = 3
 BACKOFF_BASE = 2.0
+RUN_LOG_COLUMNS = ["#", "model", "prompt"]
+RUN_LOG_WIDTHS = {
+    "#": 4,
+    "model": 20,
+    "prompt": 64,
+}
 
 
 def execute_run(
@@ -93,7 +99,11 @@ def execute_run(
         total_prompts=total,
     )
     qs.insert_run(run_record)
-    click.echo(f"Run {run_record.id} started ({total} executions)")
+    click.echo(
+        f"Run {run_record.id} started. "
+        f"{len(prompts)} prompts x {len(providers)} providers = {total} executions."
+    )
+    _echo_run_log_header()
 
     completed = 0
     errors = 0
@@ -115,6 +125,12 @@ def execute_run(
                 for attempt in range(MAX_RETRIES):
                     try:
                         limiter.wait()
+                        next_row = completed + errors + 1
+                        _echo_run_log_row(
+                            next_row,
+                            prov_record.name,
+                            rendered_text,
+                        )
                         response = ai_provider.execute(rendered_text, no_history=no_history)
 
                         brand_mentioned = 0
@@ -124,6 +140,16 @@ def execute_run(
                         if brand:
                             brand_mentioned = 1 if check_brand_mentioned(response.text, brand) else 0
                             competitors_mentioned = find_competitors_mentioned(response.text, brand)
+                            if (
+                                brand_mentioned
+                                and recommendation_judge_enabled
+                                and prompt.recommendation_enabled
+                            ):
+                                _echo_run_log_row(
+                                    next_row,
+                                    recommendation_judge_label(),
+                                    f"JUDGE: Was {brand.name} recommended?",
+                                )
                             recommendation_judgment = judge_recommendation(
                                 response.text,
                                 brand,
@@ -174,7 +200,6 @@ def execute_run(
                                 )
                             )
                         completed += 1
-                        click.echo(f"  [{completed}/{total}] {prov_record.name}: {prompt.text[:50]}... ({'mentioned' if brand_mentioned else 'not mentioned'})")
                         break
 
                     except KeyboardInterrupt:
@@ -202,7 +227,11 @@ def execute_run(
                                 error_message=traceback.format_exc(),
                             )
                             qs.insert_answer(answer)
-                            click.echo(f"  [{completed + errors}/{total}] FAILED: {e}")
+                            _echo_run_log_row(
+                                completed + errors,
+                                prov_record.name,
+                                f"FAILED: {e}",
+                            )
 
     except KeyboardInterrupt:
         click.echo(f"\n\nRun interrupted. {completed} completed, {errors} failed before cancellation.")
@@ -219,3 +248,38 @@ def execute_run(
     qs.update_run(run_record)
     click.echo(f"\nRun {run_record.id} finished: {completed} succeeded, {errors} failed")
     return run_record
+
+
+def recommendation_judge_label() -> str:
+    """Return a compact display label for the recommendation judge."""
+    return "Haiku"
+
+
+def _echo_run_log_header() -> None:
+    """Print a Markdown-style streaming table header for run progress."""
+    click.echo(_format_run_log_row(RUN_LOG_COLUMNS))
+    click.echo(_format_run_log_separator())
+
+
+def _echo_run_log_row(number: int, model: str, prompt: str) -> None:
+    """Print a single Markdown-style run progress row."""
+    click.echo(_format_run_log_row([str(number), model, prompt]))
+
+
+def _format_run_log_row(values: list[str]) -> str:
+    padded = []
+    for column, value in zip(RUN_LOG_COLUMNS, values, strict=True):
+        text = _truncate_run_log_cell(str(value), RUN_LOG_WIDTHS[column])
+        padded.append(text.ljust(RUN_LOG_WIDTHS[column]))
+    return "| " + " | ".join(padded) + " |"
+
+
+def _format_run_log_separator() -> str:
+    return "| " + " | ".join("-" * RUN_LOG_WIDTHS[c] for c in RUN_LOG_COLUMNS) + " |"
+
+
+def _truncate_run_log_cell(value: str, width: int) -> str:
+    cleaned = " ".join(value.split()).replace("|", "\\|")
+    if len(cleaned) <= width:
+        return cleaned
+    return cleaned[: max(width - 3, 0)].rstrip() + "..."
