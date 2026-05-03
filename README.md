@@ -12,12 +12,12 @@ Surfaced tracks whether and how brands are mentioned when users ask AI assistant
 curl -sSL https://raw.githubusercontent.com/agentech-dev/surfaced/main/scripts/install.sh | sh
 ```
 
-This installs `surfaced` as a globally available command. You never need to think about uv, venvs, or directories.
+This installs `surfaced` as a globally available command, installs Claude Code natively, and installs Bun plus the Codex/Gemini CLI packages. You never need to think about uv, venvs, Node.js, or directories.
 
 ## Get Started
 
 ```bash
-# 1. Set up infrastructure (ClickHouse, schema, CLI tools, cron)
+# 1. Set up infrastructure (ClickHouse, schema, cron)
 surfaced bootstrap
 
 # 2. Interactive wizard — API keys, brand, providers, prompts
@@ -34,7 +34,7 @@ surfaced analytics summary --brand "YourBrand" --days 30
 
 | Command | Description |
 |---|---|
-| `surfaced bootstrap` | Install and start all infrastructure |
+| `surfaced bootstrap` | Install and start ClickHouse infrastructure |
 | `surfaced setup` | Interactive configuration wizard |
 | `surfaced init` | Initialize ClickHouse schema |
 | `surfaced brands {add,list,show,edit,delete}` | Manage brands |
@@ -60,7 +60,7 @@ Surfaced supports 6 provider types across API and CLI modes:
 | `codex_cli` | cli | OpenAI Codex CLI subprocess |
 | `gemini_cli` | cli | Google Gemini CLI subprocess |
 
-`surfaced bootstrap` can install the CLI tools for you: Claude Code via its native installer, and Codex/Gemini via Bun. It does not install or require Node.js. `surfaced setup` auto-detects your API keys and installed CLI tools and creates providers for you.
+The curl installer installs CLI tools for you: Claude Code via its native installer, and Codex/Gemini via Bun. It does not install or require Node.js. `surfaced setup` auto-detects your API keys and installed CLI tools and creates providers for you.
 
 ## Analytics
 
