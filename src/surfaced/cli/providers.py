@@ -5,6 +5,7 @@ from uuid import UUID
 
 import click
 
+from surfaced.cli.formatting import format_markdown_table
 from surfaced.db.queries import QueryService
 from surfaced.models.provider import Provider
 
@@ -237,8 +238,16 @@ def list_providers(fmt):
     if not providers_list:
         click.echo("No providers found.")
         return
-    for p in providers_list:
-        click.echo(f"  {p.id}  {p.name} ({p.model}) [{p.provider}/{p.execution_mode}]")
+    click.echo(format_markdown_table([
+        {
+            "id": p.id,
+            "name": p.name,
+            "provider": p.provider,
+            "mode": p.execution_mode,
+            "model": p.model,
+        }
+        for p in providers_list
+    ]))
 
 
 @providers.command()

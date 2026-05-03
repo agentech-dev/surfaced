@@ -8,6 +8,7 @@ from uuid import UUID
 
 import click
 
+from surfaced.cli.formatting import format_markdown_table
 from surfaced.db.queries import QueryService
 
 def _find_queries_dir():
@@ -48,21 +49,10 @@ def _available_queries(queries_dir: str) -> list[str]:
 
 
 def _format_table(rows: list[dict]) -> str:
-    """Format rows as an aligned text table."""
+    """Format rows as a Markdown table."""
     if not rows:
         return "No results."
-    columns = list(rows[0].keys())
-    widths = {col: len(col) for col in columns}
-    for row in rows:
-        for col in columns:
-            widths[col] = max(widths[col], len(str(row[col])))
-
-    header = "  ".join(col.ljust(widths[col]) for col in columns)
-    separator = "  ".join("-" * widths[col] for col in columns)
-    lines = [header, separator]
-    for row in rows:
-        lines.append("  ".join(str(row[col]).ljust(widths[col]) for col in columns))
-    return "\n".join(lines)
+    return format_markdown_table(rows)
 
 
 def _format_csv(rows: list[dict]) -> str:

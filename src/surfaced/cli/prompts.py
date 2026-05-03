@@ -5,6 +5,7 @@ from uuid import UUID
 
 import click
 
+from surfaced.cli.formatting import format_markdown_table
 from surfaced.db.queries import QueryService
 from surfaced.engine.analyzer import is_prompt_branded
 from surfaced.models.prompt import Prompt
@@ -156,9 +157,16 @@ def list_prompts(category, tag, brand, active, fmt):
     if not prompt_list:
         click.echo("No prompts found.")
         return
-    for p in prompt_list:
-        tags_str = f" [{', '.join(p.tags)}]" if p.tags else ""
-        click.echo(f"  {p.id}  [{p.category}] {p.text[:60]}...{tags_str}")
+    click.echo(format_markdown_table([
+        {
+            "id": p.id,
+            "category": p.category,
+            "branded": "yes" if p.branded else "no",
+            "text": p.text,
+            "tags": ", ".join(p.tags) if p.tags else "-",
+        }
+        for p in prompt_list
+    ]))
 
 
 @prompts.command()
