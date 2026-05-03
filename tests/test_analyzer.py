@@ -3,6 +3,7 @@
 from uuid import uuid4
 
 from surfaced.engine.analyzer import (
+    _build_recommendation_judge_prompt,
     check_brand_mentioned,
     classify_recommendation,
     find_competitors_mentioned,
@@ -273,3 +274,16 @@ def test_recommendation_global_toggle_false(monkeypatch):
     monkeypatch.setenv("SURFACED_RECOMMENDATION_JUDGE_ENABLED", "false")
 
     assert not is_recommendation_judge_enabled()
+
+
+def test_recommendation_judge_prompt_uses_xml_sections():
+    brand = _make_brand()
+
+    prompt = _build_recommendation_judge_prompt("Acme is a strong fit.", brand)
+
+    assert "<instructions>" in prompt
+    assert "</instructions>" in prompt
+    assert "<brand>Acme</brand>" in prompt
+    assert "<aliases>" in prompt
+    assert "Acme Corp" in prompt
+    assert "<answer>\nAcme is a strong fit.\n</answer>" in prompt

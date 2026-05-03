@@ -180,12 +180,7 @@ def _call_recommendation_judge(response_text: str, brand: Brand) -> str:
         },
         messages=[{
             "role": "user",
-            "content": "\n".join([
-                f"Brand: {brand.name}",
-                f"Aliases: {', '.join(brand.aliases) if brand.aliases else '-'}",
-                "Answer:",
-                response_text,
-            ]),
+            "content": _build_recommendation_judge_prompt(response_text, brand),
         }],
     )
 
@@ -194,6 +189,25 @@ def _call_recommendation_judge(response_text: str, brand: Brand) -> str:
         if block.type == "text":
             text += block.text
     return text
+
+
+def _build_recommendation_judge_prompt(response_text: str, brand: Brand) -> str:
+    """Build the recommendation judge prompt with explicit tagged sections."""
+    return "\n".join([
+        "<instructions>",
+        "Classify only the tracked brand reference in the answer.",
+        "Return recommended when the answer endorses the brand or presents it as a good fit.",
+        "Return negative when the answer discourages using the brand or presents it as a poor fit.",
+        "Return neutral when the answer only mentions or compares the brand without a clear recommendation.",
+        "</instructions>",
+        f"<brand>{brand.name}</brand>",
+        "<aliases>",
+        "\n".join(brand.aliases) if brand.aliases else "-",
+        "</aliases>",
+        "<answer>",
+        response_text,
+        "</answer>",
+    ])
 
 
 def _parse_recommendation_status(raw_output: str) -> str:
