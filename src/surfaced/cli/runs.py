@@ -5,6 +5,7 @@ from uuid import UUID
 
 import click
 
+from surfaced.cli.formatting import format_markdown_table
 from surfaced.db.queries import QueryService
 from surfaced.models.run import Run
 
@@ -73,8 +74,15 @@ def list_runs(limit, fmt):
     if not run_list:
         click.echo("No runs found.")
         return
-    for r in run_list:
-        click.echo(f"  {r.id}  [{r.status}] {r.name}  ({r.completed_prompts}/{r.total_prompts})")
+    click.echo(format_markdown_table([
+        {
+            "id": r.id,
+            "status": r.status,
+            "name": r.name,
+            "progress": f"{r.completed_prompts}/{r.total_prompts}",
+        }
+        for r in run_list
+    ]))
 
 
 @runs.command()

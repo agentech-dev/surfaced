@@ -2,24 +2,17 @@
 
 Running list of in-flight ideas. Order is rough, not strict priority.
 
-## 1. Switch CLI-tool bootstrap from Node to Bun
+## 1. [done] Use native installers or Bun for Agent CLIs
 
-Today `surfaced bootstrap` installs Node.js (brew/apt/dnf) when no JS runtime is present, then npm-installs three CLI providers: `@anthropic-ai/claude-code`, `@openai/codex`, `@google/gemini-cli`. The runtime preference order in `bootstrap.py:144` is already `bun` > `pnpm` > `npm`; only the fallback installs Node.
+Claude Code can now be installed with a native installer: curl -fsSL https://claude.ai/install.sh | bash
 
-**Research (2026-04-30):**
+Gemini and Codex still need to be installed using e.g. npm, but both should with Bun.
 
-- `claude-code` — ships per-platform native binaries via `optionalDependencies` since v2.1.115. Install runtime is just a downloader; Bun/npm/Deno all produce a working `claude`.
-- `codex` — Node shim that downloads a Rust binary. Works on Bun and Deno; no compat issues filed.
-- `gemini-cli` — pure JS. Works on Bun for our use (non-interactive prompt → stdout), but has open child-process / PTY bugs around shell tools and MCP. **Broken on Deno** (`Dirent.isCharacterDevice` unimplemented).
+So install Bun and use Bun to install them. Do not have any fallback for nodejs. Clear up the code so its native where possible or Bun.
 
-**Action:** in the no-runtime branch (`bootstrap.py:152`), install Bun (`curl -fsSL https://bun.sh/install | bash`) instead of Node. Keep Node/npm path as fallback if Bun install fails. Do not auto-select Deno.
+Implemented in `surfaced bootstrap`: Claude uses the native installer; Bun installs Codex and Gemini; Node/npm/pnpm fallbacks are removed.
 
-**Refs:**
-- gemini-cli Bun PTY bug: https://github.com/google-gemini/gemini-cli/issues/18066
-- gemini-cli Deno broken: https://github.com/google-gemini/gemini-cli/issues/18805
-- claude-code historical Bun shebang issue (now resolved): https://github.com/anthropics/claude-code/issues/3108
-
-## 2. Rework prompt categories; add a `branded` field
+## 2. [done] Rework prompt categories; add a `branded` field
 
 **Problem:** `category` is currently a hardcoded enum (`brand_query`, `competitor_comparison`, `industry_query`, `feature_query`, `problem_solving`) in `cli/prompts.py:11`. That captures prompt *type*, not a useful analytics dimension.
 
@@ -27,16 +20,15 @@ Today `surfaced bootstrap` installs Node.js (brew/apt/dnf) when no JS runtime is
 
 **Also add `branded` (boolean):** does the prompt text itself contain the brand name (or alias)? "What's the best tool for X?" → unbranded. "How does ClickHouse compare to Snowflake for X?" → branded. Splits discovery performance from consideration performance.
 
-**Action:**
-- Drop `VALID_CATEGORIES` enum; allow free-form strings.
-- Add `branded BOOL` column to `prompts`. At add-time, auto-suggest the value by case-insensitive match of prompt text against the brand's name + aliases; let the user override.
-- Update analytics queries to group by category and filter/group by `branded`.
+Implemented: prompt categories are free-form use-case groupings, prompts track a `branded` boolean, and analytics can split by category plus branded/unbranded prompts. The starter prompt set is also trimmed for easier testing.
 
-**Files:** `src/surfaced/cli/prompts.py`, `src/surfaced/models/prompt.py`, `clickhouse/tables/prompts.sql`, `clickhouse/queries/`.
+## 3. [done] Use markdown tables in CLI output for tabular
 
-**Open question:** rename `category` → `use_case` to signal the new semantics, or keep the column name?
+Some commands have tabular style output. e.g. prompts list. We should use markdown style tabular output for this. We should look through all CLI commands and use where appropriate for the output.
 
-## 3. Recommendation metric — was the mention positive?
+Implemented: shared CLI markdown table formatting is used for list-style output in brands, prompts, providers, runs, and analytics table output.
+
+## 4. Recommendation metric — was the mention positive?
 
 **Problem:** current analytics show whether a brand is *mentioned*, not whether the AI is *recommending* it. "I'd avoid ClickHouse for X" mentions the brand the same as "I recommend ClickHouse for X".
 
@@ -52,7 +44,7 @@ Today `surfaced bootstrap` installs Node.js (brew/apt/dnf) when no JS runtime is
 
 **Files:** `src/surfaced/engine/analyzer.py`, `src/surfaced/models/answer.py`, `clickhouse/tables/answers.sql` (new column), `clickhouse/queries/`.
 
-## 4. Alignment metric — does the response reflect the canonical position?
+## 5. Alignment metric — does the response reflect the canonical position?
 
 **Problem:** LLMs cite stale training data. ClickHouse JOINs used to be weak; the product has improved a lot, but training data still says "ClickHouse is bad at JOINs". The user needs to detect when AI responses are misaligned with the *current* canonical truth so they can prioritise content/SEO to correct it.
 
@@ -63,7 +55,7 @@ Today `surfaced bootstrap` installs Node.js (brew/apt/dnf) when no JS runtime is
 - New analytics query: alignment rate over time, by provider, by position.
 
 **Schema sketch:**
-- New `canonical_positions(id, brand_id, topic, statement, created_at)` ReplacingMergeTree
+- New `canonical_positions(id, brand_id, topic, statement, created_at)` standard MergeTree
 - `prompts.alignment_position_id Nullable(UUID)` linking prompt → canonical position
 - `answers.alignment_score Enum8('aligned','partial','misaligned','silent')` + `alignment_rationale String`
 
