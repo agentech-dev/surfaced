@@ -8,6 +8,7 @@ from surfaced.models.prompt import Prompt
 from surfaced.models.answer import Answer
 from surfaced.models.provider import Provider
 from surfaced.models.run import Run
+from surfaced.cli.prompts import _format_prompt
 
 
 def test_brand_from_dict():
@@ -32,7 +33,7 @@ def test_brand_from_dict():
 def test_prompt_template_rendering():
     prompt = Prompt(
         text="What are the best {{product_type}} tools for {{industry}}?",
-        category="brand_query",
+        category="crm",
         brand_id=uuid4(),
         is_template=1,
         variables=["product_type", "industry"],
@@ -50,10 +51,44 @@ def test_prompt_extract_variables():
 def test_prompt_non_template_render():
     prompt = Prompt(
         text="What are the best CRM tools?",
-        category="brand_query",
+        category="crm",
         brand_id=uuid4(),
     )
     assert prompt.render({"something": "else"}) == "What are the best CRM tools?"
+
+
+def test_prompt_branded_defaults_false():
+    prompt = Prompt(
+        text="What are the best CRM tools?",
+        category="crm",
+        brand_id=uuid4(),
+    )
+    assert prompt.branded is False
+
+
+def test_prompt_from_dict_branded():
+    now = datetime.now()
+    prompt = Prompt.from_dict({
+        "id": uuid4(),
+        "text": "How does Acme compare to Globex?",
+        "category": "crm",
+        "brand_id": uuid4(),
+        "branded": True,
+        "created_at": now,
+        "updated_at": now,
+    })
+    assert prompt.branded is True
+
+
+def test_prompt_format_includes_branded():
+    prompt = Prompt(
+        text="How does Acme compare to Globex?",
+        category="crm",
+        brand_id=uuid4(),
+        branded=True,
+    )
+    assert '"branded": true' in _format_prompt(prompt, "json")
+    assert "Branded:   yes" in _format_prompt(prompt, "text")
 
 
 def test_provider_from_dict():
@@ -102,7 +137,8 @@ def test_answer_from_dict():
         "provider_id": uuid4(),
         "brand_id": uuid4(),
         "prompt_text": "Test prompt",
-        "prompt_category": "brand_query",
+        "prompt_category": "crm",
+        "prompt_branded": 1,
         "response_text": "Test response",
         "model": "claude-sonnet-4-6",
         "provider_name": "test",
@@ -118,3 +154,4 @@ def test_answer_from_dict():
     answer = Answer.from_dict(data)
     assert answer.status == "success"
     assert answer.brand_mentioned == 1
+    assert answer.prompt_branded is True

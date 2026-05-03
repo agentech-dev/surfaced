@@ -20,6 +20,7 @@ class Answer:
     provider_name: str
     latency_ms: int
     status: str  # 'success', 'error', 'timeout'
+    prompt_branded: bool = False
     id: UUID = field(default_factory=uuid4)
     input_tokens: int = 0
     output_tokens: int = 0
@@ -42,6 +43,7 @@ class Answer:
             model=d["model"],
             provider_name=d["provider_name"],
             latency_ms=d.get("latency_ms", 0),
+            prompt_branded=bool(d.get("prompt_branded", False)),
             input_tokens=d.get("input_tokens", 0),
             output_tokens=d.get("output_tokens", 0),
             status=d["status"],

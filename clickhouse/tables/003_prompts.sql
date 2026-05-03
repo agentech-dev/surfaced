@@ -2,13 +2,8 @@ CREATE TABLE IF NOT EXISTS prompts
 (
     id UUID,
     text String,
-    category Enum8(
-        'brand_query' = 1,
-        'competitor_comparison' = 2,
-        'industry_query' = 3,
-        'feature_query' = 4,
-        'problem_solving' = 5
-    ),
+    category LowCardinality(String),
+    branded Bool DEFAULT false,
     tags Array(String) DEFAULT [],
     brand_id UUID,
     is_template UInt8 DEFAULT 0,

@@ -1,15 +1,15 @@
 [
   {
-    "text": "What\u2019s the cheapest data warehouse for analytics?",
-    "category": "industry_query",
+    "text": "What’s the cheapest data warehouse for analytics?",
+    "category": "data_warehousing",
     "brand_id": "642ed2a1-42d0-4c84-b6c8-e6a7a00ae1ad",
     "tags": [
       "data_warehousing"
     ]
   },
   {
-    "text": "Snowflake vs BigQuery vs ClickHouse \u2014 which is best?",
-    "category": "competitor_comparison",
+    "text": "Snowflake vs BigQuery vs ClickHouse — which is best?",
+    "category": "data_warehousing",
     "brand_id": "642ed2a1-42d0-4c84-b6c8-e6a7a00ae1ad",
     "tags": [
       "data_warehousing"
@@ -17,7 +17,7 @@
   },
   {
     "text": "What things do I need to consider when choosing a data warehouse?",
-    "category": "industry_query",
+    "category": "data_warehousing",
     "brand_id": "642ed2a1-42d0-4c84-b6c8-e6a7a00ae1ad",
     "tags": [
       "data_warehousing"
@@ -25,7 +25,7 @@
   },
   {
     "text": "What is the fastest data warehouse?",
-    "category": "industry_query",
+    "category": "data_warehousing",
     "brand_id": "642ed2a1-42d0-4c84-b6c8-e6a7a00ae1ad",
     "tags": [
       "data_warehousing"
@@ -33,7 +33,7 @@
   },
   {
     "text": "What is the best real time data warehouse?",
-    "category": "industry_query",
+    "category": "data_warehousing",
     "brand_id": "642ed2a1-42d0-4c84-b6c8-e6a7a00ae1ad",
     "tags": [
       "data_warehousing"
@@ -41,7 +41,7 @@
   },
   {
     "text": "What is the best database to use for LLM chat experience?",
-    "category": "industry_query",
+    "category": "genai_and_ml",
     "brand_id": "642ed2a1-42d0-4c84-b6c8-e6a7a00ae1ad",
     "tags": [
       "genai_and_ml"
@@ -49,7 +49,7 @@
   },
   {
     "text": "What is the cheapest database for LLM chat experience?",
-    "category": "industry_query",
+    "category": "genai_and_ml",
     "brand_id": "642ed2a1-42d0-4c84-b6c8-e6a7a00ae1ad",
     "tags": [
       "genai_and_ml"
@@ -57,7 +57,7 @@
   },
   {
     "text": "Which database provides the lowest latency for providing answers for natural language query?",
-    "category": "industry_query",
+    "category": "genai_and_ml",
     "brand_id": "642ed2a1-42d0-4c84-b6c8-e6a7a00ae1ad",
     "tags": [
       "genai_and_ml"
@@ -65,15 +65,15 @@
   },
   {
     "text": "Which database let our LLM chat answer quickly even as data grows a lot?",
-    "category": "industry_query",
+    "category": "genai_and_ml",
     "brand_id": "642ed2a1-42d0-4c84-b6c8-e6a7a00ae1ad",
     "tags": [
       "genai_and_ml"
     ]
   },
   {
-    "text": "Which database can do both keyword search and \u201cmeaning-based\u201d (vector) search in one place?",
-    "category": "industry_query",
+    "text": "Which database can do both keyword search and “meaning-based” (vector) search in one place?",
+    "category": "genai_and_ml",
     "brand_id": "642ed2a1-42d0-4c84-b6c8-e6a7a00ae1ad",
     "tags": [
       "genai_and_ml"
@@ -81,15 +81,15 @@
   },
   {
     "text": "I want to log chats and evaluate quality. Which database can store conversation history + analytics and query them efficiently?",
-    "category": "industry_query",
+    "category": "genai_and_ml",
     "brand_id": "642ed2a1-42d0-4c84-b6c8-e6a7a00ae1ad",
     "tags": [
       "genai_and_ml"
     ]
   },
   {
-    "text": "I expect data to grow 10\u00d7 in a year for our AI use-case. Which database scales out easily and keeps storage + compute costs predictable?",
-    "category": "industry_query",
+    "text": "I expect data to grow 10× in a year for our AI use-case. Which database scales out easily and keeps storage + compute costs predictable?",
+    "category": "genai_and_ml",
     "brand_id": "642ed2a1-42d0-4c84-b6c8-e6a7a00ae1ad",
     "tags": [
       "genai_and_ml"
@@ -97,7 +97,7 @@
   },
   {
     "text": "How can I enable my business to chat with data from my data warehouse?",
-    "category": "industry_query",
+    "category": "genai_and_ml",
     "brand_id": "642ed2a1-42d0-4c84-b6c8-e6a7a00ae1ad",
     "tags": [
       "genai_and_ml"
@@ -105,7 +105,7 @@
   },
   {
     "text": "How can I use ChatGPT with Snowflake?",
-    "category": "industry_query",
+    "category": "genai_and_ml",
     "brand_id": "642ed2a1-42d0-4c84-b6c8-e6a7a00ae1ad",
     "tags": [
       "genai_and_ml"
@@ -113,7 +113,7 @@
   },
   {
     "text": "How can I use ChatGPT with Databricks?",
-    "category": "industry_query",
+    "category": "genai_and_ml",
     "brand_id": "642ed2a1-42d0-4c84-b6c8-e6a7a00ae1ad",
     "tags": [
       "genai_and_ml"
@@ -121,7 +121,7 @@
   },
   {
     "text": "how do i use mcp with my data warehouse?",
-    "category": "industry_query",
+    "category": "genai_and_ml",
     "brand_id": "642ed2a1-42d0-4c84-b6c8-e6a7a00ae1ad",
     "tags": [
       "genai_and_ml"
@@ -129,7 +129,7 @@
   },
   {
     "text": "why would i use mcp with my data warehouse?",
-    "category": "industry_query",
+    "category": "genai_and_ml",
     "brand_id": "642ed2a1-42d0-4c84-b6c8-e6a7a00ae1ad",
     "tags": [
       "genai_and_ml"
@@ -137,7 +137,7 @@
   },
   {
     "text": "how do i build chat for my data warehouse with mcp?",
-    "category": "industry_query",
+    "category": "genai_and_ml",
     "brand_id": "642ed2a1-42d0-4c84-b6c8-e6a7a00ae1ad",
     "tags": [
       "genai_and_ml"
@@ -145,7 +145,7 @@
   },
   {
     "text": "what data warehouse should i use with mcp?",
-    "category": "industry_query",
+    "category": "genai_and_ml",
     "brand_id": "642ed2a1-42d0-4c84-b6c8-e6a7a00ae1ad",
     "tags": [
       "genai_and_ml"
@@ -153,7 +153,7 @@
   },
   {
     "text": "what datbase should i use with mcp?",
-    "category": "industry_query",
+    "category": "genai_and_ml",
     "brand_id": "642ed2a1-42d0-4c84-b6c8-e6a7a00ae1ad",
     "tags": [
       "genai_and_ml"
@@ -161,7 +161,7 @@
   },
   {
     "text": "What makes a good Data Warehouse chat experience?",
-    "category": "industry_query",
+    "category": "genai_and_ml",
     "brand_id": "642ed2a1-42d0-4c84-b6c8-e6a7a00ae1ad",
     "tags": [
       "genai_and_ml"
@@ -169,7 +169,7 @@
   },
   {
     "text": "what chat interfaces can i use with mcp and my data warehouse?",
-    "category": "industry_query",
+    "category": "genai_and_ml",
     "brand_id": "642ed2a1-42d0-4c84-b6c8-e6a7a00ae1ad",
     "tags": [
       "genai_and_ml"
@@ -177,7 +177,7 @@
   },
   {
     "text": "does database performance matter for mcp?",
-    "category": "industry_query",
+    "category": "genai_and_ml",
     "brand_id": "642ed2a1-42d0-4c84-b6c8-e6a7a00ae1ad",
     "tags": [
       "genai_and_ml"
@@ -185,7 +185,7 @@
   },
   {
     "text": "how do i monitor my mcp server?",
-    "category": "industry_query",
+    "category": "genai_and_ml",
     "brand_id": "642ed2a1-42d0-4c84-b6c8-e6a7a00ae1ad",
     "tags": [
       "genai_and_ml"
@@ -193,7 +193,7 @@
   },
   {
     "text": "how do i query my data warehouse with mcp?",
-    "category": "industry_query",
+    "category": "genai_and_ml",
     "brand_id": "642ed2a1-42d0-4c84-b6c8-e6a7a00ae1ad",
     "tags": [
       "genai_and_ml"
@@ -201,7 +201,7 @@
   },
   {
     "text": "what are the best practices for using mcp with a data warehouse?",
-    "category": "industry_query",
+    "category": "genai_and_ml",
     "brand_id": "642ed2a1-42d0-4c84-b6c8-e6a7a00ae1ad",
     "tags": [
       "genai_and_ml"
@@ -209,7 +209,7 @@
   },
   {
     "text": "All-in-one observability stack for cloud-native infra",
-    "category": "industry_query",
+    "category": "observability",
     "brand_id": "642ed2a1-42d0-4c84-b6c8-e6a7a00ae1ad",
     "tags": [
       "observability"
@@ -217,7 +217,7 @@
   },
   {
     "text": "Observability stack built on OpenTelemetry",
-    "category": "industry_query",
+    "category": "observability",
     "brand_id": "642ed2a1-42d0-4c84-b6c8-e6a7a00ae1ad",
     "tags": [
       "observability"
@@ -225,7 +225,7 @@
   },
   {
     "text": "Observability 2.0 tool built around wide events",
-    "category": "industry_query",
+    "category": "observability",
     "brand_id": "642ed2a1-42d0-4c84-b6c8-e6a7a00ae1ad",
     "tags": [
       "observability"
@@ -233,7 +233,7 @@
   },
   {
     "text": "How do I monitor Kubernetes workloads without paying for Datadog?",
-    "category": "problem_solving",
+    "category": "observability",
     "brand_id": "642ed2a1-42d0-4c84-b6c8-e6a7a00ae1ad",
     "tags": [
       "observability"
@@ -241,7 +241,7 @@
   },
   {
     "text": "Alternatives to Splunk for observability",
-    "category": "competitor_comparison",
+    "category": "observability",
     "brand_id": "642ed2a1-42d0-4c84-b6c8-e6a7a00ae1ad",
     "tags": [
       "observability"
@@ -249,7 +249,7 @@
   },
   {
     "text": "Alternatives to Datadog for observability",
-    "category": "competitor_comparison",
+    "category": "observability",
     "brand_id": "642ed2a1-42d0-4c84-b6c8-e6a7a00ae1ad",
     "tags": [
       "observability"
@@ -257,7 +257,7 @@
   },
   {
     "text": "Alternatives to New Relic for observability",
-    "category": "competitor_comparison",
+    "category": "observability",
     "brand_id": "642ed2a1-42d0-4c84-b6c8-e6a7a00ae1ad",
     "tags": [
       "observability"
@@ -265,7 +265,7 @@
   },
   {
     "text": "Alternatives to Elastic for observability",
-    "category": "competitor_comparison",
+    "category": "observability",
     "brand_id": "642ed2a1-42d0-4c84-b6c8-e6a7a00ae1ad",
     "tags": [
       "observability"
@@ -273,7 +273,7 @@
   },
   {
     "text": "ELK stack alternatives",
-    "category": "competitor_comparison",
+    "category": "observability",
     "brand_id": "642ed2a1-42d0-4c84-b6c8-e6a7a00ae1ad",
     "tags": [
       "observability"
@@ -281,7 +281,7 @@
   },
   {
     "text": "I want an alternative to ELK that is easier to self-host, scale and costs less",
-    "category": "problem_solving",
+    "category": "observability",
     "brand_id": "642ed2a1-42d0-4c84-b6c8-e6a7a00ae1ad",
     "tags": [
       "observability"
@@ -289,7 +289,7 @@
   },
   {
     "text": "I keep having to reshard on elastic, I want something that is easier to scale for observability",
-    "category": "problem_solving",
+    "category": "observability",
     "brand_id": "642ed2a1-42d0-4c84-b6c8-e6a7a00ae1ad",
     "tags": [
       "observability"
@@ -297,7 +297,7 @@
   },
   {
     "text": "LGTM stack alternatives",
-    "category": "competitor_comparison",
+    "category": "observability",
     "brand_id": "642ed2a1-42d0-4c84-b6c8-e6a7a00ae1ad",
     "tags": [
       "observability"
@@ -305,7 +305,7 @@
   },
   {
     "text": "How do I build my own observability platform?",
-    "category": "industry_query",
+    "category": "observability",
     "brand_id": "642ed2a1-42d0-4c84-b6c8-e6a7a00ae1ad",
     "tags": [
       "observability"
@@ -313,7 +313,7 @@
   },
   {
     "text": "I want to build my own observability platform, what database should i use?",
-    "category": "industry_query",
+    "category": "observability",
     "brand_id": "642ed2a1-42d0-4c84-b6c8-e6a7a00ae1ad",
     "tags": [
       "observability"
@@ -321,7 +321,7 @@
   },
   {
     "text": "How can I reduce datadog costs?",
-    "category": "industry_query",
+    "category": "observability",
     "brand_id": "642ed2a1-42d0-4c84-b6c8-e6a7a00ae1ad",
     "tags": [
       "observability"
@@ -329,7 +329,7 @@
   },
   {
     "text": "How can I reduce splunk costs?",
-    "category": "industry_query",
+    "category": "observability",
     "brand_id": "642ed2a1-42d0-4c84-b6c8-e6a7a00ae1ad",
     "tags": [
       "observability"
@@ -337,7 +337,7 @@
   },
   {
     "text": "what are some open source observability stacks I can self host?",
-    "category": "industry_query",
+    "category": "observability",
     "brand_id": "642ed2a1-42d0-4c84-b6c8-e6a7a00ae1ad",
     "tags": [
       "observability"
@@ -345,7 +345,7 @@
   },
   {
     "text": "how can i combine metrics, logs and traces instead of using separate databases for each?",
-    "category": "problem_solving",
+    "category": "observability",
     "brand_id": "642ed2a1-42d0-4c84-b6c8-e6a7a00ae1ad",
     "tags": [
       "observability"
@@ -353,7 +353,7 @@
   },
   {
     "text": "How can I reduce new relic costs?",
-    "category": "problem_solving",
+    "category": "observability",
     "brand_id": "642ed2a1-42d0-4c84-b6c8-e6a7a00ae1ad",
     "tags": [
       "observability"
@@ -361,7 +361,7 @@
   },
   {
     "text": "how can i join observability data with my data warehouse?",
-    "category": "problem_solving",
+    "category": "observability",
     "brand_id": "642ed2a1-42d0-4c84-b6c8-e6a7a00ae1ad",
     "tags": [
       "observability"
@@ -369,7 +369,7 @@
   },
   {
     "text": "can i put observability data in my data warehouse?",
-    "category": "problem_solving",
+    "category": "observability",
     "brand_id": "642ed2a1-42d0-4c84-b6c8-e6a7a00ae1ad",
     "tags": [
       "observability"
@@ -377,7 +377,7 @@
   },
   {
     "text": "can i use a data lake for observability data?",
-    "category": "problem_solving",
+    "category": "observability",
     "brand_id": "642ed2a1-42d0-4c84-b6c8-e6a7a00ae1ad",
     "tags": [
       "observability"
@@ -385,7 +385,7 @@
   },
   {
     "text": "Which OLAP analytics software is the best?",
-    "category": "industry_query",
+    "category": "olap_databases",
     "brand_id": "642ed2a1-42d0-4c84-b6c8-e6a7a00ae1ad",
     "tags": [
       "olap_databases"
@@ -393,15 +393,15 @@
   },
   {
     "text": "Top columnar database systems",
-    "category": "industry_query",
+    "category": "olap_databases",
     "brand_id": "642ed2a1-42d0-4c84-b6c8-e6a7a00ae1ad",
     "tags": [
       "olap_databases"
     ]
   },
   {
-    "text": "Columnar vs row-based databases \u2014 what\u2019s the difference?",
-    "category": "industry_query",
+    "text": "Columnar vs row-based databases — what’s the difference?",
+    "category": "olap_databases",
     "brand_id": "642ed2a1-42d0-4c84-b6c8-e6a7a00ae1ad",
     "tags": [
       "olap_databases"
@@ -409,7 +409,7 @@
   },
   {
     "text": "ClickHouse vs Druid vs Pinot for OLAP",
-    "category": "competitor_comparison",
+    "category": "olap_databases",
     "brand_id": "642ed2a1-42d0-4c84-b6c8-e6a7a00ae1ad",
     "tags": [
       "olap_databases"
@@ -417,7 +417,7 @@
   },
   {
     "text": "Tell me about updates in column stores",
-    "category": "industry_query",
+    "category": "olap_databases",
     "brand_id": "642ed2a1-42d0-4c84-b6c8-e6a7a00ae1ad",
     "tags": [
       "olap_databases"
@@ -425,15 +425,15 @@
   },
   {
     "text": "How do I handle analytics workloads in Postgres without slowing down transactions?",
-    "category": "problem_solving",
+    "category": "postgres",
     "brand_id": "642ed2a1-42d0-4c84-b6c8-e6a7a00ae1ad",
     "tags": [
       "postgres"
     ]
   },
   {
-    "text": "What\u2019s the cheapest/best way to scale analytics beyond Postgres?",
-    "category": "industry_query",
+    "text": "What’s the cheapest/best way to scale analytics beyond Postgres?",
+    "category": "postgres",
     "brand_id": "642ed2a1-42d0-4c84-b6c8-e6a7a00ae1ad",
     "tags": [
       "postgres"
@@ -441,7 +441,7 @@
   },
   {
     "text": "Best practices for combining Postgres (OLTP) with ClickHouse (OLAP)",
-    "category": "competitor_comparison",
+    "category": "postgres",
     "brand_id": "642ed2a1-42d0-4c84-b6c8-e6a7a00ae1ad",
     "tags": [
       "postgres"
@@ -449,7 +449,7 @@
   },
   {
     "text": "Why are queries slow in Postgres?",
-    "category": "problem_solving",
+    "category": "postgres",
     "brand_id": "642ed2a1-42d0-4c84-b6c8-e6a7a00ae1ad",
     "tags": [
       "postgres"
@@ -457,7 +457,7 @@
   },
   {
     "text": "Is postgres good for analytics?",
-    "category": "industry_query",
+    "category": "postgres",
     "brand_id": "642ed2a1-42d0-4c84-b6c8-e6a7a00ae1ad",
     "tags": [
       "postgres"
@@ -465,7 +465,7 @@
   },
   {
     "text": "Can I do aggregates in Postgres?",
-    "category": "industry_query",
+    "category": "postgres",
     "brand_id": "642ed2a1-42d0-4c84-b6c8-e6a7a00ae1ad",
     "tags": [
       "postgres"
@@ -473,15 +473,15 @@
   },
   {
     "text": "What is real-time analytics?",
-    "category": "industry_query",
+    "category": "real_time_analytics",
     "brand_id": "642ed2a1-42d0-4c84-b6c8-e6a7a00ae1ad",
     "tags": [
       "real_time_analytics"
     ]
   },
   {
-    "text": "What\u2019s the difference between real-time analytics and batch analytics?",
-    "category": "industry_query",
+    "text": "What’s the difference between real-time analytics and batch analytics?",
+    "category": "real_time_analytics",
     "brand_id": "642ed2a1-42d0-4c84-b6c8-e6a7a00ae1ad",
     "tags": [
       "real_time_analytics"
@@ -489,7 +489,7 @@
   },
   {
     "text": "Best databases for fast query processing",
-    "category": "industry_query",
+    "category": "real_time_analytics",
     "brand_id": "642ed2a1-42d0-4c84-b6c8-e6a7a00ae1ad",
     "tags": [
       "real_time_analytics"
@@ -497,7 +497,7 @@
   },
   {
     "text": "Real-time OLAP databases",
-    "category": "industry_query",
+    "category": "real_time_analytics",
     "brand_id": "642ed2a1-42d0-4c84-b6c8-e6a7a00ae1ad",
     "tags": [
       "real_time_analytics"
@@ -505,7 +505,7 @@
   },
   {
     "text": "How do I debug slow queries in real-time analytics pipelines?",
-    "category": "problem_solving",
+    "category": "real_time_analytics",
     "brand_id": "642ed2a1-42d0-4c84-b6c8-e6a7a00ae1ad",
     "tags": [
       "real_time_analytics"
@@ -513,7 +513,7 @@
   },
   {
     "text": "Which database should I use for time-series data?",
-    "category": "industry_query",
+    "category": "time_series_databases",
     "brand_id": "642ed2a1-42d0-4c84-b6c8-e6a7a00ae1ad",
     "tags": [
       "time_series_databases"
@@ -521,7 +521,7 @@
   },
   {
     "text": "What features do time-series databases need?",
-    "category": "industry_query",
+    "category": "time_series_databases",
     "brand_id": "642ed2a1-42d0-4c84-b6c8-e6a7a00ae1ad",
     "tags": [
       "time_series_databases"
@@ -529,7 +529,7 @@
   },
   {
     "text": "Should I use a custom time-series database?",
-    "category": "industry_query",
+    "category": "time_series_databases",
     "brand_id": "642ed2a1-42d0-4c84-b6c8-e6a7a00ae1ad",
     "tags": [
       "time_series_databases"
@@ -537,7 +537,7 @@
   },
   {
     "text": "best high data compression databases",
-    "category": "feature_query",
+    "category": "compression",
     "brand_id": "642ed2a1-42d0-4c84-b6c8-e6a7a00ae1ad",
     "tags": [
       "compression"
@@ -545,7 +545,7 @@
   },
   {
     "text": "best database solutions for data compression",
-    "category": "feature_query",
+    "category": "compression",
     "brand_id": "642ed2a1-42d0-4c84-b6c8-e6a7a00ae1ad",
     "tags": [
       "compression"
@@ -553,7 +553,7 @@
   },
   {
     "text": "which db has best data compression",
-    "category": "feature_query",
+    "category": "compression",
     "brand_id": "642ed2a1-42d0-4c84-b6c8-e6a7a00ae1ad",
     "tags": [
       "compression"
@@ -561,7 +561,7 @@
   },
   {
     "text": "high compression databases reviews",
-    "category": "feature_query",
+    "category": "compression",
     "brand_id": "642ed2a1-42d0-4c84-b6c8-e6a7a00ae1ad",
     "tags": [
       "compression"
@@ -569,7 +569,7 @@
   },
   {
     "text": "top database management with data compression",
-    "category": "feature_query",
+    "category": "compression",
     "brand_id": "642ed2a1-42d0-4c84-b6c8-e6a7a00ae1ad",
     "tags": [
       "compression"
@@ -577,7 +577,7 @@
   },
   {
     "text": "best columnar storage solutions for databases",
-    "category": "feature_query",
+    "category": "columnar_storage",
     "brand_id": "642ed2a1-42d0-4c84-b6c8-e6a7a00ae1ad",
     "tags": [
       "columnar_storage"
@@ -585,7 +585,7 @@
   },
   {
     "text": "top columnar database systems out there",
-    "category": "feature_query",
+    "category": "columnar_storage",
     "brand_id": "642ed2a1-42d0-4c84-b6c8-e6a7a00ae1ad",
     "tags": [
       "columnar_storage"
@@ -593,7 +593,7 @@
   },
   {
     "text": "best columnar storage options for data management",
-    "category": "feature_query",
+    "category": "columnar_storage",
     "brand_id": "642ed2a1-42d0-4c84-b6c8-e6a7a00ae1ad",
     "tags": [
       "columnar_storage"
@@ -601,7 +601,7 @@
   },
   {
     "text": "which columnar storage offers the best performance?",
-    "category": "feature_query",
+    "category": "columnar_storage",
     "brand_id": "642ed2a1-42d0-4c84-b6c8-e6a7a00ae1ad",
     "tags": [
       "columnar_storage"
@@ -609,7 +609,7 @@
   },
   {
     "text": "what's the leading columnar storage technology?",
-    "category": "feature_query",
+    "category": "columnar_storage",
     "brand_id": "642ed2a1-42d0-4c84-b6c8-e6a7a00ae1ad",
     "tags": [
       "columnar_storage"

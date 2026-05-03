@@ -24,9 +24,9 @@ VALUES (
 );
 
 -- Sample prompts
-INSERT INTO prompts (id, text, category, tags, brand_id) VALUES
-    ('00000000-0000-0000-0000-000000000100', 'What are the best project management tools?', 'brand_query', ['daily'], '00000000-0000-0000-0000-000000000001'),
-    ('00000000-0000-0000-0000-000000000101', 'Compare Acme Corp with its competitors in the market', 'competitor_comparison', ['weekly'], '00000000-0000-0000-0000-000000000001'),
-    ('00000000-0000-0000-0000-000000000102', 'What software solutions are available for enterprise workflow automation?', 'industry_query', ['daily'], '00000000-0000-0000-0000-000000000001'),
-    ('00000000-0000-0000-0000-000000000103', 'What are the key features to look for in a project management platform?', 'feature_query', ['weekly'], '00000000-0000-0000-0000-000000000001'),
-    ('00000000-0000-0000-0000-000000000104', 'How can I improve team collaboration and productivity?', 'problem_solving', ['monthly'], '00000000-0000-0000-0000-000000000001');
+INSERT INTO prompts (id, text, category, branded, tags, brand_id) VALUES
+    ('00000000-0000-0000-0000-000000000100', 'What are the best project management tools?', 'project_management', false, ['daily'], '00000000-0000-0000-0000-000000000001'),
+    ('00000000-0000-0000-0000-000000000101', 'Compare Acme Corp with its competitors in the market', 'project_management', true, ['weekly'], '00000000-0000-0000-0000-000000000001'),
+    ('00000000-0000-0000-0000-000000000102', 'What software solutions are available for enterprise workflow automation?', 'workflow_automation', false, ['daily'], '00000000-0000-0000-0000-000000000001'),
+    ('00000000-0000-0000-0000-000000000103', 'What are the key features to look for in a project management platform?', 'project_management', false, ['weekly'], '00000000-0000-0000-0000-000000000001'),
+    ('00000000-0000-0000-0000-000000000104', 'How can I improve team collaboration and productivity?', 'team_productivity', false, ['monthly'], '00000000-0000-0000-0000-000000000001');

@@ -2,7 +2,11 @@
 
 from uuid import uuid4
 
-from surfaced.engine.analyzer import check_brand_mentioned, find_competitors_mentioned
+from surfaced.engine.analyzer import (
+    check_brand_mentioned,
+    find_competitors_mentioned,
+    is_prompt_branded,
+)
 from surfaced.models.brand import Brand
 
 
@@ -50,3 +54,23 @@ def test_partial_competitors():
     brand = _make_brand()
     result = find_competitors_mentioned("Globex has a strong offering.", brand)
     assert result == ["Globex"]
+
+
+def test_prompt_branded_by_name():
+    brand = _make_brand()
+    assert is_prompt_branded("How does Acme compare to Globex?", brand)
+
+
+def test_prompt_branded_by_alias():
+    brand = _make_brand()
+    assert is_prompt_branded("Is Acme Corp good for enterprise teams?", brand)
+
+
+def test_prompt_branded_case_insensitive():
+    brand = _make_brand()
+    assert is_prompt_branded("is acme good for enterprise teams?", brand)
+
+
+def test_prompt_unbranded():
+    brand = _make_brand()
+    assert not is_prompt_branded("What are the best CRM tools?", brand)

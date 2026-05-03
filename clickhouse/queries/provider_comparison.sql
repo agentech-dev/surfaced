@@ -3,6 +3,7 @@
 SELECT
     provider_name,
     model,
+    prompt_branded,
     count() AS total_runs,
     sum(brand_mentioned) AS mentions,
     round(sum(brand_mentioned) / count() * 100, 1) AS mention_rate_pct,
@@ -12,5 +13,5 @@ FROM answers
 WHERE brand_id = {brand_id:UUID}
   AND created_at >= now() - INTERVAL {days:Int32} DAY
   AND status = 'success'
-GROUP BY provider_name, model
+GROUP BY provider_name, model, prompt_branded
 ORDER BY mention_rate_pct DESC;

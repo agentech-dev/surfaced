@@ -8,6 +8,7 @@ import click
 import questionary
 
 from surfaced.db.queries import QueryService
+from surfaced.engine.analyzer import is_prompt_branded
 from surfaced.models.brand import Brand
 from surfaced.models.prompt import Prompt
 from surfaced.models.provider import Provider
@@ -309,6 +310,7 @@ def _import_prompts_file(qs: QueryService, path: str, brand: Brand) -> None:
             text=item["text"],
             category=item["category"],
             brand_id=brand.id,
+            branded=item["branded"] if "branded" in item else is_prompt_branded(item["text"], brand),
             tags=item.get("tags", []),
         )
         qs.insert_prompt(prompt)

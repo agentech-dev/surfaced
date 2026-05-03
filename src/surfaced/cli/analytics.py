@@ -87,9 +87,9 @@ def analytics(query_name, brand, days, fmt):
     \b
     Available queries:
       summary              Overall dashboard: total runs, mention rate, avg latency
-      mention_frequency    Mention rate over time, grouped by day
-      share_of_voice       Brand vs competitor mention share, by prompt category
-      provider_comparison  Visibility comparison across AI providers
+      mention_frequency    Mention rate over time, grouped by day and branded split
+      share_of_voice       Brand vs competitor mention share, by category and branded split
+      provider_comparison  Visibility comparison across AI providers and branded split
       consistency          Response stability for repeated prompts
 
     \b
