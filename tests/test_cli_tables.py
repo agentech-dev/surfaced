@@ -29,9 +29,9 @@ def test_format_markdown_table_escapes_cells():
     ])
 
     assert output == "\n".join([
-        "| name | description | empty |",
-        "| --- | --- | --- |",
-        r"| Acme \| Labs | first line second line | - |",
+        "| name         | description            | empty   |",
+        "|--------------|------------------------|---------|",
+        r"| Acme \| Labs | first line second line | -       |",
     ])
 
 
@@ -41,9 +41,9 @@ def test_analytics_table_uses_markdown():
     ])
 
     assert output == "\n".join([
-        "| category | mention_rate |",
-        "| --- | --- |",
-        r"| data\|warehouse | 0.5 |",
+        "| category        | mention_rate   |",
+        "|-----------------|----------------|",
+        r"| data\|warehouse | 0.5            |",
     ])
 
 
@@ -66,12 +66,13 @@ def test_prompts_list_uses_markdown_table(monkeypatch):
     result = CliRunner().invoke(prompts_cli.prompts, ["list"])
 
     assert result.exit_code == 0
-    assert "| id | category | branded | text | tags |" in result.output
-    expected_row = (
-        f"| {PROMPT_ID} | data_warehouse | yes | "
-        "How does Acme compare? | daily, weekly |"
-    )
-    assert expected_row in result.output
+    assert result.output == format_markdown_table([{
+        "id": PROMPT_ID,
+        "category": "data_warehouse",
+        "branded": "yes",
+        "text": "How does Acme compare?",
+        "tags": "daily, weekly",
+    }]) + "\n"
 
 
 def test_brands_list_uses_markdown_table(monkeypatch):
@@ -86,8 +87,11 @@ def test_brands_list_uses_markdown_table(monkeypatch):
     result = CliRunner().invoke(brands_cli.brands, ["list"])
 
     assert result.exit_code == 0
-    assert "| id | name | status |" in result.output
-    assert f"| {BRAND_ID} | Acme | active |" in result.output
+    assert result.output == format_markdown_table([{
+        "id": BRAND_ID,
+        "name": "Acme",
+        "status": "active",
+    }]) + "\n"
 
 
 def test_providers_list_uses_markdown_table(monkeypatch):
@@ -108,12 +112,13 @@ def test_providers_list_uses_markdown_table(monkeypatch):
     result = CliRunner().invoke(providers_cli.providers, ["list"])
 
     assert result.exit_code == 0
-    assert "| id | name | provider | mode | model |" in result.output
-    expected_row = (
-        f"| {PROVIDER_ID} | Claude API | anthropic | api | "
-        "claude-sonnet-4-6 |"
-    )
-    assert expected_row in result.output
+    assert result.output == format_markdown_table([{
+        "id": PROVIDER_ID,
+        "name": "Claude API",
+        "provider": "anthropic",
+        "mode": "api",
+        "model": "claude-sonnet-4-6",
+    }]) + "\n"
 
 
 def test_runs_list_uses_markdown_table(monkeypatch):
@@ -135,5 +140,9 @@ def test_runs_list_uses_markdown_table(monkeypatch):
     result = CliRunner().invoke(runs_cli.runs, ["list"])
 
     assert result.exit_code == 0
-    assert "| id | status | name | progress |" in result.output
-    assert f"| {RUN_ID} | completed | Daily prompts | 2/3 |" in result.output
+    assert result.output == format_markdown_table([{
+        "id": RUN_ID,
+        "status": "completed",
+        "name": "Daily prompts",
+        "progress": "2/3",
+    }]) + "\n"

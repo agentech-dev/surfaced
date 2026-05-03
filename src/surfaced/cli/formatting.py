@@ -2,6 +2,8 @@
 
 from collections.abc import Mapping, Sequence
 
+from tabulate import tabulate
+
 
 def _format_markdown_cell(value: object) -> str:
     """Format a single value for use inside a Markdown table cell."""
@@ -21,12 +23,13 @@ def format_markdown_table(
         return ""
 
     column_names = list(columns) if columns is not None else list(rows[0].keys())
-    header = "| " + " | ".join(_format_markdown_cell(col) for col in column_names) + " |"
-    separator = "| " + " | ".join("---" for _ in column_names) + " |"
-    body = [
-        "| "
-        + " | ".join(_format_markdown_cell(row.get(col)) for col in column_names)
-        + " |"
+    table_rows = [
+        [_format_markdown_cell(row.get(col)) for col in column_names]
         for row in rows
     ]
-    return "\n".join([header, separator, *body])
+    return tabulate(
+        table_rows,
+        headers=[_format_markdown_cell(col) for col in column_names],
+        tablefmt="github",
+        disable_numparse=True,
+    )
