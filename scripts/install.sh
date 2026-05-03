@@ -3,17 +3,147 @@
 # Usage: curl -sSL https://raw.githubusercontent.com/agentech-dev/surfaced/main/scripts/install.sh | sh
 #
 # Installs `surfaced` as a globally available command.
-# Run `surfaced bootstrap` afterwards to set up infrastructure.
+# Also installs agent CLI tools. Run `surfaced bootstrap` afterwards to set up infrastructure.
 
 set -eu
 
 REPO_URL="https://github.com/agentech-dev/surfaced.git"
 INSTALL_DIR="$HOME/.surfaced"
+LOCAL_BIN="$HOME/.local/bin"
+BUN_BIN="$HOME/.bun/bin"
 
 info()  { printf "==> %s\n" "$*"; }
 ok()    { printf "  ✓ %s\n" "$*"; }
 skip()  { printf "  • %s\n" "$*"; }
 err()   { printf "  ✗ %s\n" "$*" >&2; }
+
+export PATH="$LOCAL_BIN:$BUN_BIN:$PATH"
+
+sudo_cmd() {
+    if [ "$(id -u)" = "0" ]; then
+        "$@"
+    elif command -v sudo >/dev/null 2>&1; then
+        sudo "$@"
+    else
+        return 1
+    fi
+}
+
+install_unzip() {
+    if command -v unzip >/dev/null 2>&1; then
+        ok "unzip found"
+        return 0
+    fi
+
+    info "Installing unzip (required by Bun on Linux)..."
+    if command -v apt-get >/dev/null 2>&1; then
+        if ! (sudo_cmd apt-get update -qq && sudo_cmd apt-get install -y -qq unzip); then
+            err "Failed to install unzip — install manually: sudo apt-get install unzip"
+            exit 1
+        fi
+    elif command -v dnf >/dev/null 2>&1; then
+        if ! sudo_cmd dnf install -y unzip; then
+            err "Failed to install unzip — install manually: sudo dnf install unzip"
+            exit 1
+        fi
+    elif command -v yum >/dev/null 2>&1; then
+        if ! sudo_cmd yum install -y unzip; then
+            err "Failed to install unzip — install manually: sudo yum install unzip"
+            exit 1
+        fi
+    elif command -v apk >/dev/null 2>&1; then
+        if ! sudo_cmd apk add unzip; then
+            err "Failed to install unzip — install manually: sudo apk add unzip"
+            exit 1
+        fi
+    elif command -v brew >/dev/null 2>&1; then
+        if ! brew install unzip; then
+            err "Failed to install unzip — install manually: brew install unzip"
+            exit 1
+        fi
+    else
+        err "unzip is required to install Bun, but no supported package manager was found"
+        echo ""
+        echo "Install unzip with your system package manager, then re-run this installer."
+        exit 1
+    fi
+
+    if command -v unzip >/dev/null 2>&1; then
+        ok "unzip installed"
+    else
+        err "unzip install completed, but unzip is still not on PATH"
+        exit 1
+    fi
+}
+
+install_bun() {
+    if command -v bun >/dev/null 2>&1; then
+        ok "bun found ($(bun --version 2>/dev/null || echo installed))"
+        return 0
+    fi
+
+    install_unzip
+    info "Installing Bun..."
+    curl -fsSL https://bun.sh/install | bash
+    export PATH="$BUN_BIN:$PATH"
+
+    if command -v bun >/dev/null 2>&1; then
+        ok "bun installed ($(bun --version 2>/dev/null || echo installed))"
+    else
+        err "Bun installed, but $BUN_BIN is not on your PATH"
+        echo ""
+        echo "Add this to your shell profile (~/.bashrc, ~/.zshrc, etc.):"
+        echo "  export BUN_INSTALL=\"$HOME/.bun\""
+        echo "  export PATH=\"\$BUN_INSTALL/bin:\$PATH\""
+        exit 1
+    fi
+}
+
+install_claude() {
+    if command -v claude >/dev/null 2>&1; then
+        ok "claude found"
+        return 0
+    fi
+
+    info "Installing Claude Code..."
+    curl -fsSL https://claude.ai/install.sh | bash
+    export PATH="$LOCAL_BIN:$PATH"
+
+    if command -v claude >/dev/null 2>&1; then
+        ok "claude installed"
+    else
+        err "Claude Code installed, but $LOCAL_BIN is not on your PATH"
+        echo ""
+        echo "Add this to your shell profile (~/.bashrc, ~/.zshrc, etc.):"
+        echo "  export PATH=\"$LOCAL_BIN:\$PATH\""
+        exit 1
+    fi
+}
+
+install_bun_cli() {
+    binary="$1"
+    package="$2"
+
+    if command -v "$binary" >/dev/null 2>&1; then
+        ok "$binary found"
+        return 0
+    fi
+
+    info "Installing $binary..."
+    bun add --global "$package"
+    export PATH="$BUN_BIN:$PATH"
+
+    if command -v "$binary" >/dev/null 2>&1; then
+        ok "$binary installed"
+    else
+        err "$package installed, but $binary is not on your PATH"
+        echo ""
+        echo "Add this to your shell profile (~/.bashrc, ~/.zshrc, etc.):"
+        echo "  export BUN_INSTALL=\"$HOME/.bun\""
+        echo "  export PATH=\"\$BUN_INSTALL/bin:\$PATH\""
+        exit 1
+    fi
+}
 
 # ---------- 1. Check dependencies ----------
 info "Checking dependencies..."
@@ -66,6 +196,13 @@ fi
 info "Installing surfaced CLI..."
 uv tool install --from "$INSTALL_DIR" surfaced --force --quiet
 ok "surfaced installed"
+
+# ---------- 5. Install agent CLI tools ----------
+info "Installing agent CLI tools..."
+install_claude
+install_bun
+install_bun_cli codex @openai/codex
+install_bun_cli gemini @google/gemini-cli
 
 # ---------- Verify ----------
 if command -v surfaced >/dev/null 2>&1; then

@@ -55,7 +55,7 @@ def cli():
 
     \b
     Typical workflow:
-      1. surfaced bootstrap     Install infrastructure (ClickHouse, CLI tools)
+      1. surfaced bootstrap     Install infrastructure (ClickHouse, schema, cron)
       2. surfaced setup         Interactive wizard (API keys, brand, providers, prompts)
       3. surfaced run            Execute prompts against providers
       4. surfaced analytics      View brand visibility results
