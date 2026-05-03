@@ -19,6 +19,18 @@ SELECT
         * 100,
         1
     ) AS recommendation_rate_pct,
+    countIf(alignment_status IN ('aligned', 'partial', 'misaligned', 'silent')) AS alignment_judged_answers,
+    countIf(alignment_status = 'aligned') AS aligned_answers,
+    countIf(alignment_status = 'partial') AS partial_answers,
+    countIf(alignment_status = 'misaligned') AS misaligned_answers,
+    countIf(alignment_status = 'silent') AS silent_answers,
+    countIf(alignment_status = 'judge_failed') AS alignment_judge_failed_answers,
+    round(
+        countIf(alignment_status = 'aligned')
+        / greatest(countIf(alignment_status IN ('aligned', 'partial', 'misaligned', 'silent')), 1)
+        * 100,
+        1
+    ) AS alignment_rate_pct,
     uniq(prompt_id) AS unique_prompts,
     uniq(provider_name) AS providers_used,
     round(avg(latency_ms)) AS avg_latency_ms,

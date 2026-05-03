@@ -9,6 +9,7 @@ from surfaced.cli.bootstrap import bootstrap
 from surfaced.cli.setup import setup
 from surfaced.cli.brands import brands
 from surfaced.cli.prompts import prompts
+from surfaced.cli.positions import positions
 from surfaced.cli.providers import providers
 from surfaced.cli.run import run
 from surfaced.cli.runs import runs
@@ -77,6 +78,7 @@ cli.add_command(bootstrap)
 cli.add_command(setup)
 cli.add_command(brands)
 cli.add_command(prompts)
+cli.add_command(positions)
 cli.add_command(providers)
 cli.add_command(run)
 cli.add_command(runs)

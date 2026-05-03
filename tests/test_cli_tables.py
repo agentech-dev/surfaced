@@ -6,12 +6,14 @@ from uuid import UUID
 from click.testing import CliRunner
 
 import surfaced.cli.brands as brands_cli
+import surfaced.cli.positions as positions_cli
 import surfaced.cli.prompts as prompts_cli
 import surfaced.cli.providers as providers_cli
 import surfaced.cli.runs as runs_cli
 from surfaced.cli.analytics import _format_table
 from surfaced.cli.formatting import format_markdown_table
 from surfaced.models.brand import Brand
+from surfaced.models.canonical_position import CanonicalPosition
 from surfaced.models.prompt import Prompt
 from surfaced.models.provider import Provider
 from surfaced.models.run import Run
@@ -21,6 +23,7 @@ BRAND_ID = UUID("00000000-0000-0000-0000-000000000001")
 PROMPT_ID = UUID("00000000-0000-0000-0000-000000000002")
 PROVIDER_ID = UUID("00000000-0000-0000-0000-000000000003")
 RUN_ID = UUID("00000000-0000-0000-0000-000000000004")
+POSITION_ID = UUID("00000000-0000-0000-0000-000000000005")
 
 
 def test_format_markdown_table_escapes_cells():
@@ -70,10 +73,37 @@ def test_prompts_list_uses_markdown_table(monkeypatch):
     assert result.output == format_markdown_table([{
         "id": PROMPT_ID,
         "category": "data_warehouse",
-        "branded": "yes",
-        "recommendations": "no",
-        "text": "How does Acme compare?",
-        "tags": "daily, weekly",
+            "branded": "yes",
+            "recommendations": "no",
+            "alignment": "no",
+            "text": "How does Acme compare?",
+            "tags": "daily, weekly",
+        }]) + "\n"
+
+
+def test_positions_list_uses_markdown_table(monkeypatch):
+    position = CanonicalPosition(
+        id=POSITION_ID,
+        brand_id=BRAND_ID,
+        topic="joins",
+        statement="ClickHouse supports high-performance joins.",
+    )
+
+    class FakeQueryService:
+        def get_canonical_positions(self, active_only=True, brand_id=None):
+            return [position]
+
+    monkeypatch.setattr(positions_cli, "_qs", FakeQueryService)
+
+    result = CliRunner().invoke(positions_cli.positions, ["list"])
+
+    assert result.exit_code == 0
+    assert result.output == format_markdown_table([{
+        "id": POSITION_ID,
+        "brand_id": BRAND_ID,
+        "topic": "joins",
+        "statement": "ClickHouse supports high-performance joins.",
+        "status": "active",
     }]) + "\n"
 
 

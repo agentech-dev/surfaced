@@ -7,11 +7,16 @@ from uuid import UUID
 
 from surfaced.db.client import DBClient
 from surfaced.models.brand import Brand
+from surfaced.models.alignment_judgment import AlignmentJudgment
 from surfaced.models.prompt import Prompt
+from surfaced.models.canonical_position import CanonicalPosition
 from surfaced.models.answer import Answer
 from surfaced.models.provider import Provider
 from surfaced.models.recommendation_judgment import RecommendationJudgment
 from surfaced.models.run import Run
+
+
+NIL_UUID = "00000000-0000-0000-0000-000000000000"
 
 
 class QueryService:
@@ -126,18 +131,107 @@ class QueryService:
             [[
                 str(prompt.id), prompt.text, prompt.category,
                 prompt.branded, prompt.recommendation_enabled,
+                prompt.alignment_enabled,
+                str(prompt.alignment_position_id or NIL_UUID),
                 prompt.tags, str(prompt.brand_id),
                 prompt.is_template, prompt.variables, prompt.is_active,
                 prompt.created_at, prompt.updated_at,
             ]],
             column_names=[
                 "id", "text", "category", "branded",
-                "recommendation_enabled", "tags", "brand_id",
+                "recommendation_enabled", "alignment_enabled",
+                "alignment_position_id", "tags", "brand_id",
                 "is_template", "variables", "is_active",
                 "created_at", "updated_at",
             ],
         )
         return prompt
+
+    # --- Canonical positions ---
+
+    def insert_canonical_position(
+        self, position: CanonicalPosition
+    ) -> CanonicalPosition:
+        self.db.insert_rows(
+            "canonical_positions",
+            [[
+                str(position.id), str(position.brand_id), position.topic,
+                position.statement, position.is_active,
+                position.created_at, position.updated_at,
+            ]],
+            column_names=[
+                "id", "brand_id", "topic", "statement", "is_active",
+                "created_at", "updated_at",
+            ],
+        )
+        return position
+
+    def get_canonical_positions(
+        self,
+        active_only: bool = True,
+        brand_id: UUID | None = None,
+    ) -> list[CanonicalPosition]:
+        conditions = []
+        params = {}
+        if active_only:
+            conditions.append("is_active = 1")
+        if brand_id:
+            conditions.append("brand_id = {brand_id:UUID}")
+            params["brand_id"] = str(brand_id)
+
+        query = "SELECT * FROM canonical_positions"
+        if conditions:
+            query += " WHERE " + " AND ".join(conditions)
+        query += " ORDER BY brand_id, topic"
+        rows = self.db.execute(query, parameters=params if params else None)
+        return [CanonicalPosition.from_dict(r) for r in rows]
+
+    def get_canonical_position(
+        self,
+        position_id: UUID,
+        active_only: bool = True,
+    ) -> CanonicalPosition | None:
+        query = "SELECT * FROM canonical_positions WHERE id = {id:UUID}"
+        if active_only:
+            query += " AND is_active = 1"
+        rows = self.db.execute(query, parameters={"id": str(position_id)})
+        return CanonicalPosition.from_dict(rows[0]) if rows else None
+
+    def update_canonical_position(
+        self, position: CanonicalPosition
+    ) -> CanonicalPosition:
+        position.updated_at = datetime.now()
+        self.db.execute_no_result(
+            """
+            UPDATE canonical_positions
+            SET
+                topic = {topic:String},
+                statement = {statement:String},
+                is_active = {is_active:UInt8},
+                updated_at = {updated_at:DateTime64(3)}
+            WHERE id = {id:UUID}
+            """,
+            parameters={
+                "id": str(position.id),
+                "topic": position.topic,
+                "statement": position.statement,
+                "is_active": position.is_active,
+                "updated_at": position.updated_at,
+            },
+        )
+        return position
+
+    def delete_canonical_position(self, position_id: UUID) -> None:
+        self.db.execute_no_result(
+            """
+            UPDATE canonical_positions
+            SET
+                is_active = 0,
+                updated_at = {updated_at:DateTime64(3)}
+            WHERE id = {id:UUID}
+            """,
+            parameters={"id": str(position_id), "updated_at": datetime.now()},
+        )
 
     def get_prompts(
         self,
@@ -236,6 +330,9 @@ class QueryService:
                 answer.input_tokens, answer.output_tokens,
                 answer.status, answer.error_message,
                 answer.brand_mentioned, answer.recommendation_status,
+                answer.alignment_status,
+                str(answer.alignment_position_id or NIL_UUID),
+                answer.alignment_rationale,
                 answer.competitors_mentioned,
                 answer.created_at,
             ]],
@@ -245,7 +342,9 @@ class QueryService:
                 "model", "provider_name", "latency_ms",
                 "input_tokens", "output_tokens",
                 "status", "error_message",
-                "brand_mentioned", "recommendation_status", "competitors_mentioned",
+                "brand_mentioned", "recommendation_status",
+                "alignment_status", "alignment_position_id", "alignment_rationale",
+                "competitors_mentioned",
                 "created_at",
             ],
         )
@@ -292,6 +391,31 @@ class QueryService:
                 "id", "answer_id", "run_id", "prompt_id", "provider_id",
                 "brand_id", "judge_model", "recommendation_status",
                 "raw_output", "error_message", "latency_ms", "created_at",
+            ],
+        )
+        return judgment
+
+    # --- Alignment judgments ---
+
+    def insert_alignment_judgment(
+        self, judgment: AlignmentJudgment
+    ) -> AlignmentJudgment:
+        self.db.insert_rows(
+            "alignment_judgments",
+            [[
+                str(judgment.id), str(judgment.answer_id), str(judgment.run_id),
+                str(judgment.prompt_id), str(judgment.provider_id),
+                str(judgment.brand_id), str(judgment.alignment_position_id),
+                judgment.judge_model, judgment.alignment_status,
+                judgment.rationale, judgment.raw_output,
+                judgment.error_message, judgment.latency_ms,
+                judgment.created_at,
+            ]],
+            column_names=[
+                "id", "answer_id", "run_id", "prompt_id", "provider_id",
+                "brand_id", "alignment_position_id", "judge_model",
+                "alignment_status", "rationale", "raw_output",
+                "error_message", "latency_ms", "created_at",
             ],
         )
         return judgment
