@@ -5,15 +5,30 @@ import os
 
 import click
 
+from surfaced.db.client import DBClient
 
-def run_schema_init(host: str = "localhost", port: int = 8123) -> int:
+
+def run_schema_init(
+    host: str | None = None,
+    port: int | None = None,
+    username: str | None = None,
+    password: str | None = None,
+    database: str | None = None,
+    secure: bool | None = None,
+) -> int:
     """Initialize the ClickHouse schema. Returns count of applied files.
 
-    Callable from both the `init` CLI command and `bootstrap`.
+    Callable from both the `init` CLI command and `bootstrap`. Any parameter
+    left as None falls back to its CLICKHOUSE_* environment variable.
     """
-    import clickhouse_connect
-
-    client = clickhouse_connect.get_client(host=host, port=port)
+    db = DBClient(
+        host=host,
+        port=port,
+        username=username,
+        password=password,
+        database=database,
+        secure=secure,
+    )
 
     base_dir = _find_clickhouse_dir()
     if not base_dir:
@@ -36,7 +51,7 @@ def run_schema_init(host: str = "localhost", port: int = 8123) -> int:
             # Split on semicolons to handle files with multiple statements
             statements = [s.strip() for s in sql_content.split(";") if s.strip()]
             for statement in statements:
-                client.command(statement)
+                db.execute_no_result(statement)
 
             click.echo(f"  Applied {filename}")
             total += 1
@@ -46,24 +61,43 @@ def run_schema_init(host: str = "localhost", port: int = 8123) -> int:
 
 
 @click.command()
-@click.option("--host", default="localhost", help="ClickHouse host")
-@click.option("--port", default=8123, type=int, help="ClickHouse HTTP port")
-def init(host, port):
+@click.option("--host", default=None, help="ClickHouse host (env: CLICKHOUSE_HOST)")
+@click.option("--port", default=None, type=int, help="ClickHouse port (env: CLICKHOUSE_PORT)")
+@click.option("--username", default=None, help="ClickHouse user (env: CLICKHOUSE_USER)")
+@click.option("--password", default=None, help="ClickHouse password (env: CLICKHOUSE_PASSWORD)")
+@click.option("--database", default=None, help="ClickHouse database (env: CLICKHOUSE_DATABASE)")
+@click.option("--secure/--no-secure", default=None, help="Use HTTPS/TLS (env: CLICKHOUSE_SECURE). Required for ClickHouse Cloud.")
+def init(host, port, username, password, database, secure):
     """Initialize the ClickHouse database schema.
 
     \b
     Runs all table and materialized view SQL files in order.
-    Requires a running ClickHouse server (clickhousectl local server start).
+    Connects to a running ClickHouse server (local or ClickHouse Cloud).
     Safe to run multiple times — uses CREATE TABLE IF NOT EXISTS.
 
     \b
+    Connection settings are read from CLICKHOUSE_* environment variables
+    unless overridden via flags. For ClickHouse Cloud, set:
+      CLICKHOUSE_HOST=<your-host>.clickhouse.cloud
+      CLICKHOUSE_USER=default
+      CLICKHOUSE_PASSWORD=<password>
+      CLICKHOUSE_SECURE=true
+
+    \b
     CONTEXT FOR AGENTS:
-      You usually don't need to call this directly — 'surfaced bootstrap'
-      runs it automatically. Use this only if you need to re-apply schema
-      on an already-running ClickHouse instance. Tables are stored in
-      clickhouse/tables/ and materialized views in clickhouse/materialized_views/.
+      For local-only setups, 'surfaced bootstrap' runs this automatically.
+      For ClickHouse Cloud or any remote server, run this directly after
+      populating .env. Tables are stored in clickhouse/tables/ and
+      materialized views in clickhouse/materialized_views/.
     """
-    run_schema_init(host, port)
+    run_schema_init(
+        host=host,
+        port=port,
+        username=username,
+        password=password,
+        database=database,
+        secure=secure,
+    )
 
 
 def _find_clickhouse_dir():

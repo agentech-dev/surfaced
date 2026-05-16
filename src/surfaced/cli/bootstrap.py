@@ -1,11 +1,15 @@
 """Bootstrap command — non-interactive infrastructure setup."""
 
+import json
 import os
+import secrets
 import shutil
 import subprocess
 import time
 
 import click
+
+APP_USER = "surfaced"
 
 
 def _find_project_dir() -> str:
@@ -38,7 +42,7 @@ def _run(cmd: str, check: bool = True, capture: bool = False) -> subprocess.Comp
     )
 
 
-def _ping_clickhouse(host: str = "localhost", port: int = 8123) -> bool:
+def _ping_local_clickhouse(host: str = "localhost", port: int = 8123) -> bool:
     try:
         import urllib.request
         resp = urllib.request.urlopen(f"http://{host}:{port}/ping", timeout=2)
@@ -47,84 +51,19 @@ def _ping_clickhouse(host: str = "localhost", port: int = 8123) -> bool:
         return False
 
 
-@click.command()
-@click.option("--skip-cron", is_flag=True, help="Skip cron setup")
-@click.option("--host", default="localhost", help="ClickHouse host")
-@click.option("--port", default=8123, type=int, help="ClickHouse HTTP port")
-def bootstrap(skip_cron, host, port):
-    """Set up all infrastructure for surfaced.
-
-    \b
-    Installs clickhousectl, ClickHouse, starts the server, initializes the schema,
-    creates .env, and optionally installs cron entries.
-    Idempotent — safe to run multiple times.
-
-    \b
-    What it does (in order):
-      1. Install clickhousectl (ClickHouse version manager)
-      2. Install ClickHouse binary via clickhousectl
-      3. Start ClickHouse server if not running
-      4. Run schema migrations (CREATE TABLE statements)
-      5. Copy .env.example → .env if missing
-      6. Set up cron for scheduled runs
-
-    \b
-    CONTEXT FOR AGENTS:
-      Run this once after installation. It is non-interactive and requires
-      no input. After bootstrap completes, run 'surfaced setup' to
-      configure API keys, brands, providers, and prompts interactively.
-      Use --skip-cron if you don't want scheduled runs.
-    """
-    project_dir = _find_project_dir()
-
-    # ---------- 1. Install clickhousectl ----------
+def _ensure_clickhousectl() -> None:
     click.echo("==> Checking clickhousectl...")
     if _cmd_exists("clickhousectl"):
         click.echo("  - clickhousectl already installed")
-    else:
-        click.echo("  Installing clickhousectl...")
-        _run("curl -sSL https://clickhouse.com/cli | sh")
-        # Ensure PATH includes clickhousectl
-        os.environ["PATH"] = os.path.join(os.path.expanduser("~"), ".local", "bin") + ":" + os.environ.get("PATH", "")
-        click.echo("  ✓ clickhousectl installed")
+        return
+    click.echo("  Installing clickhousectl...")
+    _run("curl -sSL https://clickhouse.com/cli | sh")
+    os.environ["PATH"] = os.path.join(os.path.expanduser("~"), ".local", "bin") + ":" + os.environ.get("PATH", "")
+    click.echo("  ✓ clickhousectl installed")
 
-    # ---------- 2. Install ClickHouse via clickhousectl ----------
-    click.echo("==> Checking ClickHouse...")
-    result = _run("clickhousectl local which", check=False, capture=True)
-    if result.returncode == 0 and result.stdout.strip():
-        click.echo(f"  - ClickHouse already installed ({result.stdout.strip()})")
-    else:
-        click.echo("  Installing ClickHouse stable...")
-        _run("clickhousectl local use stable")
-        click.echo("  ✓ ClickHouse installed")
 
-    # ---------- 3. Start ClickHouse if not running ----------
-    click.echo("==> Checking ClickHouse server...")
-    if _ping_clickhouse(host, port):
-        click.echo("  - ClickHouse already running")
-    else:
-        click.echo("  Starting ClickHouse...")
-        subprocess.Popen(
-            ["clickhousectl", "local", "server", "start"],
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-        )
-        for i in range(15):
-            if _ping_clickhouse(host, port):
-                break
-            time.sleep(1)
-        if _ping_clickhouse(host, port):
-            click.echo("  ✓ ClickHouse started")
-        else:
-            click.echo("  ✗ ClickHouse failed to start after 15s", err=True)
-            raise SystemExit(1)
-
-    # ---------- 4. Run schema init ----------
-    click.echo("==> Initializing schema...")
-    from surfaced.cli.init import run_schema_init
-    run_schema_init(host, port)
-
-    # ---------- 5. Copy .env.example → .env ----------
+def _ensure_env_file(project_dir: str) -> str:
+    """Ensure .env exists (copy from .env.example if missing). Returns the path."""
     env_file = os.path.join(project_dir, ".env")
     env_example = os.path.join(project_dir, ".env.example")
     if os.path.exists(env_file):
@@ -134,37 +73,425 @@ def bootstrap(skip_cron, host, port):
         click.echo("==> Created .env from .env.example")
     else:
         click.echo("==> .env.example not found, skipping .env creation")
+    return env_file
 
-    # ---------- 6. Setup cron ----------
-    if skip_cron:
-        click.echo("==> Skipping cron (--skip-cron)")
-    else:
-        click.echo("==> Setting up cron...")
-        cron_marker = "# surfaced-managed"
-        result = _run("crontab -l", check=False, capture=True)
-        existing_crontab = result.stdout if result.returncode == 0 else ""
 
-        if cron_marker in existing_crontab:
-            click.echo("  - Cron entries already exist")
+def _write_env_key(path: str, key: str, value: str) -> None:
+    """Set a key in a .env file, updating in place or appending."""
+    lines: list[str] = []
+    found = False
+    if os.path.exists(path):
+        with open(path) as f:
+            lines = f.readlines()
+
+    new_lines: list[str] = []
+    for line in lines:
+        stripped = line.strip()
+        if stripped.startswith(f"{key}=") or stripped.startswith(f"{key} ="):
+            new_lines.append(f"{key}={value}\n")
+            found = True
+        elif stripped == f"# {key}=" or stripped.startswith(f"# {key}="):
+            new_lines.append(f"{key}={value}\n")
+            found = True
         else:
-            new_entries = f"""
+            new_lines.append(line)
+
+    if not found:
+        new_lines.append(f"{key}={value}\n")
+
+    with open(path, "w") as f:
+        f.writelines(new_lines)
+
+
+def _setup_cron(project_dir: str) -> None:
+    click.echo("==> Setting up cron...")
+    cron_marker = "# surfaced-managed"
+    result = _run("crontab -l", check=False, capture=True)
+    existing_crontab = result.stdout if result.returncode == 0 else ""
+
+    if cron_marker in existing_crontab:
+        click.echo("  - Cron entries already exist")
+        return
+
+    new_entries = f"""
 {cron_marker}
 0 6 * * *   cd {project_dir} && ./scripts/surfaced-runner.sh daily   {cron_marker}
 0 6 * * 1   cd {project_dir} && ./scripts/surfaced-runner.sh weekly  {cron_marker}
 0 6 1 * *   cd {project_dir} && ./scripts/surfaced-runner.sh monthly {cron_marker}
 """
-            full_crontab = existing_crontab.rstrip() + "\n" + new_entries
-            cron_result = subprocess.run(
-                ["crontab", "-"],
-                input=full_crontab, text=True,
-                check=False, capture_output=True,
-            )
-            if cron_result.returncode == 0:
-                click.echo("  ✓ Cron entries added (daily 6am, weekly Mon 6am, monthly 1st 6am)")
-            else:
-                click.echo("  ✗ Failed to set crontab — add entries manually")
+    full_crontab = existing_crontab.rstrip() + "\n" + new_entries
+    cron_result = subprocess.run(
+        ["crontab", "-"],
+        input=full_crontab, text=True,
+        check=False, capture_output=True,
+    )
+    if cron_result.returncode == 0:
+        click.echo("  ✓ Cron entries added (daily 6am, weekly Mon 6am, monthly 1st 6am)")
+    else:
+        click.echo("  ✗ Failed to set crontab — add entries manually")
 
-    # ---------- Done ----------
+
+# ── App user provisioning ────────────────────────────────────────────────
+
+def _provision_app_user(
+    env_file: str,
+    admin_host: str,
+    admin_port: int,
+    admin_user: str,
+    admin_password: str,
+    admin_secure: bool,
+    database: str = "default",
+) -> None:
+    """Ensure the `surfaced` user exists with GRANT ALL on `database`.
+
+    Persists user + generated password to .env and os.environ so that
+    schema init and the application run as `surfaced`, not as the admin.
+    Idempotent: if `surfaced` already exists, re-applies GRANT and keeps
+    whatever password is already in .env.
+    """
+    from surfaced.db.client import DBClient
+
+    click.echo(f"==> Provisioning '{APP_USER}' user...")
+
+    # Already pointing at surfaced with a password — nothing to do.
+    if os.environ.get("CLICKHOUSE_USER") == APP_USER and os.environ.get("CLICKHOUSE_PASSWORD"):
+        click.echo(f"  - Using existing '{APP_USER}' credentials from .env")
+        return
+
+    admin = DBClient(
+        host=admin_host,
+        port=admin_port,
+        username=admin_user,
+        password=admin_password,
+        database=database,
+        secure=admin_secure,
+    )
+
+    try:
+        rows = admin.execute(
+            "SELECT name FROM system.users WHERE name = %(n)s",
+            parameters={"n": APP_USER},
+        )
+    except Exception as exc:
+        click.echo(f"  ✗ Failed to connect as admin user '{admin_user}': {exc}", err=True)
+        raise SystemExit(1)
+
+    if rows:
+        # User exists but we don't have its password in .env.
+        try:
+            admin.execute_no_result(f"GRANT ALL ON {database}.* TO {APP_USER}")
+        except Exception as exc:
+            click.echo(f"  ! Could not re-apply GRANT: {exc}", err=True)
+        click.echo(
+            f"  ! User '{APP_USER}' already exists on the server but no matching credentials in .env.",
+            err=True,
+        )
+        click.echo(
+            f"    Either populate CLICKHOUSE_USER={APP_USER} and CLICKHOUSE_PASSWORD in .env,"
+            f" or DROP USER {APP_USER} on the server and rerun.",
+            err=True,
+        )
+        raise SystemExit(1)
+
+    password = secrets.token_urlsafe(32)
+    # `secrets.token_urlsafe` returns only [A-Za-z0-9_-] so it's safe inside single-quoted SQL.
+    admin.execute_no_result(f"CREATE USER {APP_USER} IDENTIFIED BY '{password}'")
+    admin.execute_no_result(f"GRANT ALL ON {database}.* TO {APP_USER}")
+    click.echo(f"  ✓ Created user '{APP_USER}' with all privileges on '{database}'")
+
+    _write_env_key(env_file, "CLICKHOUSE_USER", APP_USER)
+    _write_env_key(env_file, "CLICKHOUSE_PASSWORD", password)
+    os.environ["CLICKHOUSE_USER"] = APP_USER
+    os.environ["CLICKHOUSE_PASSWORD"] = password
+
+
+# ── Local bootstrap ──────────────────────────────────────────────────────
+
+def _bootstrap_local(host: str, port: int, env_file: str) -> None:
+    # Install ClickHouse via clickhousectl
+    click.echo("==> Checking ClickHouse...")
+    result = _run("clickhousectl local which", check=False, capture=True)
+    if result.returncode == 0 and result.stdout.strip():
+        click.echo(f"  - ClickHouse already installed ({result.stdout.strip()})")
+    else:
+        click.echo("  Installing ClickHouse stable...")
+        _run("clickhousectl local use stable")
+        click.echo("  ✓ ClickHouse installed")
+
+    # Start ClickHouse if not running
+    click.echo("==> Checking ClickHouse server...")
+    if _ping_local_clickhouse(host, port):
+        click.echo("  - ClickHouse already running")
+    else:
+        click.echo("  Starting ClickHouse...")
+        subprocess.Popen(
+            ["clickhousectl", "local", "server", "start"],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+        for _ in range(15):
+            if _ping_local_clickhouse(host, port):
+                break
+            time.sleep(1)
+        if _ping_local_clickhouse(host, port):
+            click.echo("  ✓ ClickHouse started")
+        else:
+            click.echo("  ✗ ClickHouse failed to start after 15s", err=True)
+            raise SystemExit(1)
+
+    # Provision the surfaced user using local default (no password) as admin
+    _provision_app_user(
+        env_file=env_file,
+        admin_host=host,
+        admin_port=port,
+        admin_user="default",
+        admin_password="",
+        admin_secure=False,
+    )
+
+
+# ── Cloud bootstrap ──────────────────────────────────────────────────────
+
+def _bootstrap_cloud(env_file: str) -> None:
+    api_key = os.environ.get("CLICKHOUSE_CLOUD_API_KEY", "").strip()
+    api_secret = os.environ.get("CLICKHOUSE_CLOUD_API_SECRET", "").strip()
+    if not api_key or not api_secret:
+        click.echo(
+            "  ✗ CLICKHOUSE_CLOUD_API_KEY and CLICKHOUSE_CLOUD_API_SECRET are required.",
+            err=True,
+        )
+        click.echo(
+            f"    Create an Admin API key at https://console.clickhouse.cloud and set them in {env_file}, then rerun.",
+            err=True,
+        )
+        raise SystemExit(1)
+
+    service_name = os.environ.get("CLICKHOUSE_CLOUD_SERVICE_NAME", "surfaced").strip() or "surfaced"
+    provider = os.environ.get("CLICKHOUSE_CLOUD_PROVIDER", "aws").strip() or "aws"
+    region = os.environ.get("CLICKHOUSE_CLOUD_REGION", "us-east-1").strip() or "us-east-1"
+
+    # Verify auth
+    click.echo("==> Verifying ClickHouse Cloud authentication...")
+    auth = _run("clickhousectl cloud auth status --json", check=False, capture=True)
+    if auth.returncode != 0:
+        click.echo("  ✗ clickhousectl could not authenticate against ClickHouse Cloud.", err=True)
+        click.echo(f"    {auth.stderr.strip() or auth.stdout.strip()}", err=True)
+        raise SystemExit(1)
+    click.echo("  ✓ Authenticated")
+
+    # Locate or create the service
+    click.echo(f"==> Resolving cloud service '{service_name}'...")
+    listed = _run("clickhousectl cloud service list --json", check=False, capture=True)
+    if listed.returncode != 0:
+        click.echo(f"  ✗ Failed to list services: {listed.stderr.strip()}", err=True)
+        raise SystemExit(1)
+
+    existing = None
+    try:
+        services = json.loads(listed.stdout or "[]")
+        for svc in services:
+            if svc.get("name") == service_name:
+                existing = svc
+                break
+    except json.JSONDecodeError:
+        click.echo("  ✗ Could not parse service list output.", err=True)
+        raise SystemExit(1)
+
+    service_id: str
+    admin_password: str
+    if existing:
+        service_id = existing["id"]
+        click.echo(f"  - Found existing service: {service_name} ({service_id})")
+        host, port = _endpoint_from_service(existing)
+        if not host:
+            # Endpoints may not be populated until the service is running; fetch fresh
+            host, port = _wait_for_endpoint(service_id)
+        # Reuse: we don't have the default user password. The provisioning step
+        # will short-circuit if .env already has the surfaced user credentials.
+        if os.environ.get("CLICKHOUSE_USER") != APP_USER or not os.environ.get("CLICKHOUSE_PASSWORD"):
+            click.echo(
+                f"  ! Reusing existing service but no '{APP_USER}' credentials in .env.",
+                err=True,
+            )
+            click.echo(
+                "    Reset the default password and rerun to re-provision: "
+                f"clickhousectl cloud service reset-password {service_id}",
+                err=True,
+            )
+            raise SystemExit(1)
+        admin_password = ""  # not used — provision will short-circuit
+    else:
+        click.echo(f"  Creating service '{service_name}' ({provider} / {region})...")
+        create_cmd = (
+            f"clickhousectl cloud service create --json "
+            f"--name {shell_quote(service_name)} "
+            f"--provider {shell_quote(provider)} "
+            f"--region {shell_quote(region)}"
+        )
+        created = _run(create_cmd, check=False, capture=True)
+        if created.returncode != 0:
+            click.echo(f"  ✗ Service create failed: {created.stderr.strip() or created.stdout.strip()}", err=True)
+            raise SystemExit(1)
+        try:
+            payload = json.loads(created.stdout)
+        except json.JSONDecodeError:
+            click.echo("  ✗ Could not parse service create response.", err=True)
+            raise SystemExit(1)
+        svc = payload.get("service", {})
+        admin_password = payload.get("password", "")
+        service_id = svc.get("id", "")
+        host, port = _endpoint_from_service(svc)
+        if not host:
+            host, port = _wait_for_endpoint(service_id)
+        click.echo(f"  ✓ Service created ({service_id})")
+
+    # Persist host/port/secure to .env (user + password are written by provisioning)
+    _write_env_key(env_file, "CLICKHOUSE_HOST", host)
+    _write_env_key(env_file, "CLICKHOUSE_PORT", str(port))
+    _write_env_key(env_file, "CLICKHOUSE_SECURE", "true")
+    os.environ["CLICKHOUSE_HOST"] = host
+    os.environ["CLICKHOUSE_PORT"] = str(port)
+    os.environ["CLICKHOUSE_SECURE"] = "true"
+
+    # Wait until service state is running
+    click.echo("==> Waiting for service to be running...")
+    if not _wait_for_state(service_id, "running", timeout_s=300):
+        click.echo("  ✗ Service did not reach 'running' state within 5 minutes.", err=True)
+        raise SystemExit(1)
+    click.echo("  ✓ Service running")
+
+    # Provision the surfaced user using default's freshly-issued password
+    _provision_app_user(
+        env_file=env_file,
+        admin_host=host,
+        admin_port=port,
+        admin_user="default",
+        admin_password=admin_password,
+        admin_secure=True,
+    )
+
+
+def shell_quote(s: str) -> str:
+    """Quote a string for safe inclusion in a shell command."""
+    import shlex
+    return shlex.quote(s)
+
+
+def _endpoint_from_service(svc: dict) -> tuple[str, int]:
+    """Extract the HTTPS endpoint from a service JSON object."""
+    endpoints = svc.get("endpoints") or []
+    https = next((e for e in endpoints if str(e.get("protocol", "")).lower() == "https"), None)
+    endpoint = https or (endpoints[0] if endpoints else None)
+    if not endpoint:
+        return ("", 0)
+    host = endpoint.get("host", "")
+    port_raw = endpoint.get("port", 0)
+    try:
+        port = int(port_raw)
+    except (TypeError, ValueError):
+        port = 8443
+    return (host, port)
+
+
+def _wait_for_endpoint(service_id: str, timeout_s: int = 300) -> tuple[str, int]:
+    """Poll `cloud service get` until an endpoint is populated."""
+    deadline = time.time() + timeout_s
+    while time.time() < deadline:
+        result = _run(f"clickhousectl cloud service get --json {shell_quote(service_id)}", check=False, capture=True)
+        if result.returncode == 0:
+            try:
+                svc = json.loads(result.stdout)
+            except json.JSONDecodeError:
+                svc = {}
+            host, port = _endpoint_from_service(svc)
+            if host:
+                return (host, port)
+        time.sleep(5)
+    return ("", 0)
+
+
+def _wait_for_state(service_id: str, target: str, timeout_s: int = 300) -> bool:
+    deadline = time.time() + timeout_s
+    while time.time() < deadline:
+        result = _run(f"clickhousectl cloud service get --json {shell_quote(service_id)}", check=False, capture=True)
+        if result.returncode == 0:
+            try:
+                svc = json.loads(result.stdout)
+            except json.JSONDecodeError:
+                svc = {}
+            if str(svc.get("state", "")).lower() == target:
+                return True
+        time.sleep(5)
+    return False
+
+
+# ── Command ──────────────────────────────────────────────────────────────
+
+@click.command()
+@click.option("--cloud", is_flag=True, help="Provision a ClickHouse Cloud service via clickhousectl instead of a local server.")
+@click.option("--skip-cron", is_flag=True, help="Skip cron setup")
+@click.option("--host", default="localhost", help="ClickHouse host (local mode only)")
+@click.option("--port", default=8123, type=int, help="ClickHouse HTTP port (local mode only)")
+def bootstrap(cloud, skip_cron, host, port):
+    """Set up all infrastructure for surfaced.
+
+    \b
+    Local (default): installs clickhousectl, ClickHouse, starts the server,
+    creates a dedicated `surfaced` database user, initializes the schema,
+    creates .env, and optionally installs cron.
+
+    \b
+    Cloud (--cloud): installs clickhousectl, provisions a ClickHouse Cloud
+    service (or reuses an existing one), creates a dedicated `surfaced`
+    user, writes connection details to .env, initializes the schema, and
+    installs cron.
+
+    \b
+    Idempotent — safe to run multiple times. The `surfaced` user is
+    created with GRANT ALL on the database the first time only;
+    subsequent runs reuse the credentials persisted in .env.
+
+    \b
+    Cloud mode requires these env vars (set in .env before running):
+      CLICKHOUSE_CLOUD_API_KEY          Admin API key (from console)
+      CLICKHOUSE_CLOUD_API_SECRET       Admin API secret
+      CLICKHOUSE_CLOUD_SERVICE_NAME     Service name (default: surfaced)
+      CLICKHOUSE_CLOUD_PROVIDER         aws | gcp | azure (default: aws)
+      CLICKHOUSE_CLOUD_REGION           Cloud region (default: us-east-1)
+
+    \b
+    CONTEXT FOR AGENTS:
+      Run this once after installation. Non-interactive. After bootstrap,
+      run 'surfaced setup' for API keys, brands, providers, and prompts.
+      Use --cloud to host the database on ClickHouse Cloud; otherwise it
+      runs ClickHouse locally via clickhousectl.
+    """
+    project_dir = _find_project_dir()
+
+    # Step 1: install clickhousectl (common)
+    _ensure_clickhousectl()
+
+    # Step 2: ensure .env exists before cloud bootstrap (which writes to it)
+    env_file = _ensure_env_file(project_dir)
+
+    # Step 3: provision database + the surfaced app user
+    if cloud:
+        _bootstrap_cloud(env_file)
+    else:
+        _bootstrap_local(host, port, env_file)
+
+    # Step 4: schema init runs as the surfaced user provisioned above (read from env)
+    click.echo("==> Initializing schema...")
+    from surfaced.cli.init import run_schema_init
+    run_schema_init()
+
+    # Step 5: cron
+    if skip_cron:
+        click.echo("==> Skipping cron (--skip-cron)")
+    else:
+        _setup_cron(project_dir)
+
+    # Done
     click.echo("")
     click.echo("════════════════════════════════════════════════════")
     click.echo(" Surfaced infrastructure is ready!")

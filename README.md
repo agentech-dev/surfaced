@@ -98,9 +98,41 @@ surfaced analytics share_of_voice --brand "YourBrand" --days 30
 - `OPENAI_API_KEY` — OpenAI API provider
 - `GEMINI_API_KEY` — Google Gemini API provider
 - `CLICKHOUSE_HOST` — ClickHouse host (default: `localhost`)
-- `CLICKHOUSE_PORT` — ClickHouse HTTP port (default: `8123`)
+- `CLICKHOUSE_PORT` — ClickHouse port (default: `8123`, or `8443` when `CLICKHOUSE_SECURE=true`)
+- `CLICKHOUSE_USER` — ClickHouse user (default: `default`)
+- `CLICKHOUSE_PASSWORD` — ClickHouse password (default: empty)
+- `CLICKHOUSE_DATABASE` — ClickHouse database (default: `default`)
+- `CLICKHOUSE_SECURE` — Use HTTPS/TLS (default: `false`; set `true` for ClickHouse Cloud)
 - `SURFACED_RECOMMENDATION_JUDGE_ENABLED` — Recommendation judge toggle (default: `true`)
 - `SURFACED_RECOMMENDATION_JUDGE_MODEL` — Anthropic judge model (default: `claude-haiku-4-5`)
+
+### Database user
+
+Both `surfaced bootstrap` and `surfaced bootstrap --cloud` create a dedicated
+`surfaced` database user with `GRANT ALL` on the connected database. The
+generated password is written to `.env` as `CLICKHOUSE_USER` and
+`CLICKHOUSE_PASSWORD`, and the application connects as that user — the admin
+`default` user is only used during bootstrap to provision the app user.
+
+### ClickHouse Cloud
+
+To host the database on ClickHouse Cloud, set your Admin API credentials in `.env`:
+
+```
+CLICKHOUSE_CLOUD_API_KEY=<key>
+CLICKHOUSE_CLOUD_API_SECRET=<secret>
+CLICKHOUSE_CLOUD_SERVICE_NAME=surfaced   # optional, default: surfaced
+CLICKHOUSE_CLOUD_PROVIDER=aws            # optional, default: aws
+CLICKHOUSE_CLOUD_REGION=us-east-1        # optional, default: us-east-1
+```
+
+Then run `surfaced bootstrap --cloud`. This provisions (or reuses) a Cloud
+service via `clickhousectl`, creates the `surfaced` user, writes connection
+details to `.env`, applies the schema, and installs cron.
+
+Already have a service? Populate `CLICKHOUSE_HOST`, `CLICKHOUSE_USER`,
+`CLICKHOUSE_PASSWORD`, and `CLICKHOUSE_SECURE=true` in `.env` yourself and run
+`surfaced init` directly.
 
 ## Development
 
