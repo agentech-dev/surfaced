@@ -4,12 +4,35 @@ import json
 import os
 import secrets
 import shutil
+import string
 import subprocess
 import time
 
 import click
 
 APP_USER = "surfaced"
+
+# Special characters that are safe inside a single-quoted SQL literal
+# (no single quote, no backslash) and accepted by ClickHouse Cloud's
+# password policy.
+_PASSWORD_SPECIALS = "!@#$%^&*+=?"
+
+
+def _generate_password() -> str:
+    """Generate a strong password that satisfies ClickHouse Cloud's policy.
+
+    Cloud requires at least one uppercase, lowercase, digit and special
+    character. `secrets.token_urlsafe` only emits [A-Za-z0-9_-], so we
+    append one guaranteed character of each class.
+    """
+    base = secrets.token_urlsafe(24)
+    suffix = (
+        secrets.choice(string.ascii_uppercase)
+        + secrets.choice(string.ascii_lowercase)
+        + secrets.choice(string.digits)
+        + secrets.choice(_PASSWORD_SPECIALS)
+    )
+    return base + suffix
 
 
 def _find_project_dir() -> str:
@@ -188,8 +211,7 @@ def _provision_app_user(
             raise SystemExit(1)
         return
 
-    password = secrets.token_urlsafe(32)
-    # `secrets.token_urlsafe` returns only [A-Za-z0-9_-] so it's safe inside single-quoted SQL.
+    password = _generate_password()
     admin.execute_no_result(f"CREATE USER {APP_USER} IDENTIFIED BY '{password}'")
     _apply_app_user_grants(admin, database)
     click.echo(f"  ✓ Created user '{APP_USER}' with all privileges on '{database}'")
