@@ -8,6 +8,9 @@
 
 set -euo pipefail
 
+# Ensure user-local installs (e.g. uv at ~/.local/bin) are on PATH under cron
+export PATH="$HOME/.local/bin:$PATH"
+
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
 cd "$PROJECT_DIR"

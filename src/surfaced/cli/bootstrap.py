@@ -136,8 +136,10 @@ def _setup_cron(project_dir: str) -> None:
         click.echo("  - Cron entries already exist")
         return
 
+    home = os.path.expanduser("~")
     new_entries = f"""
 {cron_marker}
+PATH={home}/.local/bin:/usr/local/bin:/usr/bin:/bin {cron_marker}
 0 6 * * *   cd {project_dir} && ./scripts/surfaced-runner.sh daily   {cron_marker}
 0 6 * * 1   cd {project_dir} && ./scripts/surfaced-runner.sh weekly  {cron_marker}
 0 6 1 * *   cd {project_dir} && ./scripts/surfaced-runner.sh monthly {cron_marker}
