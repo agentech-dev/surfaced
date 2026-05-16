@@ -153,11 +153,6 @@ def _provision_app_user(
 
     click.echo(f"==> Provisioning '{APP_USER}' user...")
 
-    # Already pointing at surfaced with a password — nothing to do.
-    if os.environ.get("CLICKHOUSE_USER") == APP_USER and os.environ.get("CLICKHOUSE_PASSWORD"):
-        click.echo(f"  - Using existing '{APP_USER}' credentials from .env")
-        return
-
     admin = DBClient(
         host=admin_host,
         port=admin_port,
@@ -177,32 +172,41 @@ def _provision_app_user(
         raise SystemExit(1)
 
     if rows:
-        # User exists but we don't have its password in .env.
-        try:
-            admin.execute_no_result(f"GRANT ALL ON {database}.* TO {APP_USER}")
-        except Exception as exc:
-            click.echo(f"  ! Could not re-apply GRANT: {exc}", err=True)
-        click.echo(
-            f"  ! User '{APP_USER}' already exists on the server but no matching credentials in .env.",
-            err=True,
-        )
-        click.echo(
-            f"    Either populate CLICKHOUSE_USER={APP_USER} and CLICKHOUSE_PASSWORD in .env,"
-            f" or DROP USER {APP_USER} on the server and rerun.",
-            err=True,
-        )
-        raise SystemExit(1)
+        # User exists — re-apply grants idempotently to bring older installs up to date.
+        _apply_app_user_grants(admin, database)
+        click.echo(f"  - User '{APP_USER}' already exists; grants re-applied")
+        if not (os.environ.get("CLICKHOUSE_USER") == APP_USER and os.environ.get("CLICKHOUSE_PASSWORD")):
+            click.echo(
+                f"  ! User '{APP_USER}' exists on the server but no matching credentials in .env.",
+                err=True,
+            )
+            click.echo(
+                f"    Either populate CLICKHOUSE_USER={APP_USER} and CLICKHOUSE_PASSWORD in .env,"
+                f" or DROP USER {APP_USER} on the server and rerun.",
+                err=True,
+            )
+            raise SystemExit(1)
+        return
 
     password = secrets.token_urlsafe(32)
     # `secrets.token_urlsafe` returns only [A-Za-z0-9_-] so it's safe inside single-quoted SQL.
     admin.execute_no_result(f"CREATE USER {APP_USER} IDENTIFIED BY '{password}'")
-    admin.execute_no_result(f"GRANT ALL ON {database}.* TO {APP_USER}")
+    _apply_app_user_grants(admin, database)
     click.echo(f"  ✓ Created user '{APP_USER}' with all privileges on '{database}'")
 
     _write_env_key(env_file, "CLICKHOUSE_USER", APP_USER)
     _write_env_key(env_file, "CLICKHOUSE_PASSWORD", password)
     os.environ["CLICKHOUSE_USER"] = APP_USER
     os.environ["CLICKHOUSE_PASSWORD"] = password
+
+
+def _apply_app_user_grants(admin, database: str) -> None:
+    """Apply the privileges the surfaced user needs. Idempotent."""
+    # Database-scoped privileges (SELECT, INSERT, ALTER, CREATE TABLE, etc.)
+    admin.execute_no_result(f"GRANT ALL ON {database}.* TO {APP_USER}")
+    # Global TABLE ENGINE privilege — not implied by GRANT ALL ON db.*.
+    # `ON *` covers every engine (MergeTree, ReplacingMergeTree, SummingMergeTree, ...).
+    admin.execute_no_result(f"GRANT TABLE ENGINE ON * TO {APP_USER}")
 
 
 # ── Local bootstrap ──────────────────────────────────────────────────────
