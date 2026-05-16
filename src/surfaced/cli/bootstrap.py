@@ -213,22 +213,36 @@ def _provision_app_user(
 
     password = _generate_password()
     admin.execute_no_result(f"CREATE USER {APP_USER} IDENTIFIED BY '{password}'")
-    _apply_app_user_grants(admin, database)
-    click.echo(f"  ✓ Created user '{APP_USER}' with all privileges on '{database}'")
 
+    # Persist credentials BEFORE attempting grants — if grants fail we still
+    # have the password recorded in .env, so the next run can re-enter via the
+    # "user already exists" branch and re-apply grants idempotently.
     _write_env_key(env_file, "CLICKHOUSE_USER", APP_USER)
     _write_env_key(env_file, "CLICKHOUSE_PASSWORD", password)
     os.environ["CLICKHOUSE_USER"] = APP_USER
     os.environ["CLICKHOUSE_PASSWORD"] = password
 
+    _apply_app_user_grants(admin, database)
+    click.echo(f"  ✓ Created user '{APP_USER}' with all privileges on '{database}'")
+
 
 def _apply_app_user_grants(admin, database: str) -> None:
-    """Apply the privileges the surfaced user needs. Idempotent."""
-    # Database-scoped privileges (SELECT, INSERT, ALTER, CREATE TABLE, etc.)
-    admin.execute_no_result(f"GRANT ALL ON {database}.* TO {APP_USER}")
-    # Global TABLE ENGINE privilege — not implied by GRANT ALL ON db.*.
-    # `ON *` covers every engine (MergeTree, ReplacingMergeTree, SummingMergeTree, ...).
-    admin.execute_no_result(f"GRANT TABLE ENGINE ON * TO {APP_USER}")
+    """Apply the privileges the surfaced user needs. Idempotent.
+
+    Uses `GRANT CURRENT GRANTS` so the same code works on both a local
+    clickhouse-server (where `default` has every privilege with grant option)
+    and ClickHouse Cloud (where `default` has Cloud's curated grants but no
+    grant option for `ALL`). The `default` user shares whatever it holds.
+    """
+    admin.execute_no_result(f"GRANT CURRENT GRANTS ON {database}.* TO {APP_USER}")
+    # Global TABLE ENGINE is only relevant on local — Cloud manages engines
+    # itself and Cloud's `default` cannot grant at global scope. Tolerate
+    # failure so the cloud path doesn't break on a privilege the user won't
+    # need anyway.
+    try:
+        admin.execute_no_result(f"GRANT TABLE ENGINE ON * TO {APP_USER}")
+    except Exception:
+        pass
 
 
 # ── Local bootstrap ──────────────────────────────────────────────────────
