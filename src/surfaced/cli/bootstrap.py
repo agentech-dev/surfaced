@@ -256,9 +256,15 @@ def _bootstrap_local(host: str, port: int, env_file: str) -> None:
 
 # ── Cloud bootstrap ──────────────────────────────────────────────────────
 
+def _cloud_env(name: str, default: str = "") -> str:
+    """Return the env var value if set and non-empty, else default."""
+    value = os.environ.get(name, "").strip()
+    return value or default
+
+
 def _bootstrap_cloud(env_file: str) -> None:
-    api_key = os.environ.get("CLICKHOUSE_CLOUD_API_KEY", "").strip()
-    api_secret = os.environ.get("CLICKHOUSE_CLOUD_API_SECRET", "").strip()
+    api_key = _cloud_env("CLICKHOUSE_CLOUD_API_KEY")
+    api_secret = _cloud_env("CLICKHOUSE_CLOUD_API_SECRET")
     if not api_key or not api_secret:
         click.echo(
             "  ✗ CLICKHOUSE_CLOUD_API_KEY and CLICKHOUSE_CLOUD_API_SECRET are required.",
@@ -270,22 +276,37 @@ def _bootstrap_cloud(env_file: str) -> None:
         )
         raise SystemExit(1)
 
-    service_name = os.environ.get("CLICKHOUSE_CLOUD_SERVICE_NAME", "surfaced").strip() or "surfaced"
-    provider = os.environ.get("CLICKHOUSE_CLOUD_PROVIDER", "aws").strip() or "aws"
-    region = os.environ.get("CLICKHOUSE_CLOUD_REGION", "us-east-1").strip() or "us-east-1"
+    service_name = _cloud_env("CLICKHOUSE_CLOUD_SERVICE_NAME", default="surfaced")
+    provider = _cloud_env("CLICKHOUSE_CLOUD_PROVIDER", default="aws")
+    region = _cloud_env("CLICKHOUSE_CLOUD_REGION", default="us-east-1")
+    org_id = _cloud_env("CLICKHOUSE_CLOUD_ORG_ID")
 
-    # Verify auth
-    click.echo("==> Verifying ClickHouse Cloud authentication...")
-    auth = _run("clickhousectl cloud auth status --json", check=False, capture=True)
-    if auth.returncode != 0:
+    # Export canonical names so child clickhousectl invocations pick them up.
+    os.environ["CLICKHOUSE_CLOUD_API_KEY"] = api_key
+    os.environ["CLICKHOUSE_CLOUD_API_SECRET"] = api_secret
+
+    # Non-interactive login persists creds to clickhousectl's config so subsequent
+    # commands work even without env vars, and it actually validates the key/secret
+    # (unlike `auth status`, which exits 0 even when no creds are configured).
+    click.echo("==> Authenticating clickhousectl against ClickHouse Cloud...")
+    login = _run(
+        f"clickhousectl cloud auth login --api-key {shell_quote(api_key)} "
+        f"--api-secret {shell_quote(api_secret)} --json",
+        check=False,
+        capture=True,
+    )
+    if login.returncode != 0:
         click.echo("  ✗ clickhousectl could not authenticate against ClickHouse Cloud.", err=True)
-        click.echo(f"    {auth.stderr.strip() or auth.stdout.strip()}", err=True)
+        click.echo(f"    {login.stderr.strip() or login.stdout.strip()}", err=True)
         raise SystemExit(1)
     click.echo("  ✓ Authenticated")
 
     # Locate or create the service
     click.echo(f"==> Resolving cloud service '{service_name}'...")
-    listed = _run("clickhousectl cloud service list --json", check=False, capture=True)
+    list_cmd = "clickhousectl cloud service list --json"
+    if org_id:
+        list_cmd += f" --org-id {shell_quote(org_id)}"
+    listed = _run(list_cmd, check=False, capture=True)
     if listed.returncode != 0:
         click.echo(f"  ✗ Failed to list services: {listed.stderr.strip()}", err=True)
         raise SystemExit(1)
@@ -309,7 +330,7 @@ def _bootstrap_cloud(env_file: str) -> None:
         host, port = _endpoint_from_service(existing)
         if not host:
             # Endpoints may not be populated until the service is running; fetch fresh
-            host, port = _wait_for_endpoint(service_id)
+            host, port = _wait_for_endpoint(service_id, org_id=org_id)
         # Reuse: we don't have the default user password. The provisioning step
         # will short-circuit if .env already has the surfaced user credentials.
         if os.environ.get("CLICKHOUSE_USER") != APP_USER or not os.environ.get("CLICKHOUSE_PASSWORD"):
@@ -332,6 +353,8 @@ def _bootstrap_cloud(env_file: str) -> None:
             f"--provider {shell_quote(provider)} "
             f"--region {shell_quote(region)}"
         )
+        if org_id:
+            create_cmd += f" --org-id {shell_quote(org_id)}"
         created = _run(create_cmd, check=False, capture=True)
         if created.returncode != 0:
             click.echo(f"  ✗ Service create failed: {created.stderr.strip() or created.stdout.strip()}", err=True)
@@ -346,7 +369,7 @@ def _bootstrap_cloud(env_file: str) -> None:
         service_id = svc.get("id", "")
         host, port = _endpoint_from_service(svc)
         if not host:
-            host, port = _wait_for_endpoint(service_id)
+            host, port = _wait_for_endpoint(service_id, org_id=org_id)
         click.echo(f"  ✓ Service created ({service_id})")
 
     # Persist host/port/secure to .env (user + password are written by provisioning)
@@ -359,7 +382,7 @@ def _bootstrap_cloud(env_file: str) -> None:
 
     # Wait until service state is running
     click.echo("==> Waiting for service to be running...")
-    if not _wait_for_state(service_id, "running", timeout_s=300):
+    if not _wait_for_state(service_id, "running", org_id=org_id, timeout_s=300):
         click.echo("  ✗ Service did not reach 'running' state within 5 minutes.", err=True)
         raise SystemExit(1)
     click.echo("  ✓ Service running")
@@ -397,11 +420,18 @@ def _endpoint_from_service(svc: dict) -> tuple[str, int]:
     return (host, port)
 
 
-def _wait_for_endpoint(service_id: str, timeout_s: int = 300) -> tuple[str, int]:
+def _service_get_cmd(service_id: str, org_id: str = "") -> str:
+    cmd = f"clickhousectl cloud service get --json {shell_quote(service_id)}"
+    if org_id:
+        cmd += f" --org-id {shell_quote(org_id)}"
+    return cmd
+
+
+def _wait_for_endpoint(service_id: str, org_id: str = "", timeout_s: int = 300) -> tuple[str, int]:
     """Poll `cloud service get` until an endpoint is populated."""
     deadline = time.time() + timeout_s
     while time.time() < deadline:
-        result = _run(f"clickhousectl cloud service get --json {shell_quote(service_id)}", check=False, capture=True)
+        result = _run(_service_get_cmd(service_id, org_id), check=False, capture=True)
         if result.returncode == 0:
             try:
                 svc = json.loads(result.stdout)
@@ -414,10 +444,10 @@ def _wait_for_endpoint(service_id: str, timeout_s: int = 300) -> tuple[str, int]
     return ("", 0)
 
 
-def _wait_for_state(service_id: str, target: str, timeout_s: int = 300) -> bool:
+def _wait_for_state(service_id: str, target: str, org_id: str = "", timeout_s: int = 300) -> bool:
     deadline = time.time() + timeout_s
     while time.time() < deadline:
-        result = _run(f"clickhousectl cloud service get --json {shell_quote(service_id)}", check=False, capture=True)
+        result = _run(_service_get_cmd(service_id, org_id), check=False, capture=True)
         if result.returncode == 0:
             try:
                 svc = json.loads(result.stdout)
@@ -456,9 +486,10 @@ def bootstrap(cloud, skip_cron, host, port):
     subsequent runs reuse the credentials persisted in .env.
 
     \b
-    Cloud mode requires these env vars (set in .env before running):
-      CLICKHOUSE_CLOUD_API_KEY          Admin API key (from console)
-      CLICKHOUSE_CLOUD_API_SECRET       Admin API secret
+    Cloud mode reads these env vars (set in .env before running):
+      CLICKHOUSE_CLOUD_API_KEY          Admin API key (from console; required)
+      CLICKHOUSE_CLOUD_API_SECRET       Admin API secret (required)
+      CLICKHOUSE_CLOUD_ORG_ID           Organization ID (auto-detected if unset)
       CLICKHOUSE_CLOUD_SERVICE_NAME     Service name (default: surfaced)
       CLICKHOUSE_CLOUD_PROVIDER         aws | gcp | azure (default: aws)
       CLICKHOUSE_CLOUD_REGION           Cloud region (default: us-east-1)
